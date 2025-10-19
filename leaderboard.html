@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leaderboard - Daily Exam Quiz Portal</title>
+
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- FontAwesome Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="index.html"
+        ><i class="fas fa-graduation-cap me-2"></i>Quiz Portal</a
+      >
+      <div class="navbar-nav ms-auto">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link active" href="leaderboard.html">Leaderboard</a>
+        <a class="nav-link" href="admin.html">Admin</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container my-5">
+    <div class="text-center mb-4">
+      <h1 class="display-4 fw-bold">
+        <i class="fas fa-trophy text-warning me-2"></i>Live Leaderboard
+      </h1>
+      <p class="lead">Rankings updated at 9:00 PM IST daily</p>
+      <div class="badge bg-success fs-6">
+        <i class="fas fa-sync-alt me-2"></i>Auto-refreshes every 30 seconds
+      </div>
+    </div>
+
+    <!-- Time Period Tabs -->
+    <ul
+      class="nav nav-pills mb-4 justify-content-center"
+      id="periodTabs"
+      role="tablist"
+    >
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link active"
+          data-period="today"
+          type="button"
+          role="tab"
+          aria-selected="true"
+        >
+          Today
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link"
+          data-period="week"
+          type="button"
+          role="tab"
+          aria-selected="false"
+        >
+          This Week
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link"
+          data-period="month"
+          type="button"
+          role="tab"
+          aria-selected="false"
+        >
+          This Month
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link"
+          data-period="all"
+          type="button"
+          role="tab"
+          aria-selected="false"
+        >
+          All Time
+        </button>
+      </li>
+    </ul>
+
+    <!-- Stats Dashboard -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card text-center stat-card">
+          <div class="card-body">
+            <i class="fas fa-users fa-2x text-primary mb-2"></i>
+            <h3 id="totalParticipants">0</h3>
+            <p class="mb-0">Total Participants</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center stat-card">
+          <div class="card-body">
+            <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+            <h3 id="averageScore">0%</h3>
+            <p class="mb-0">Average Score</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center stat-card">
+          <div class="card-body">
+            <i class="fas fa-star fa-2x text-warning mb-2"></i>
+            <h3 id="highestScore">0%</h3>
+            <p class="mb-0">Highest Score</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center stat-card">
+          <div class="card-body">
+            <i class="fas fa-ranking-star fa-2x text-info mb-2"></i>
+            <h3 id="yourPercentile">-</h3>
+            <p class="mb-0">Your Percentile</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Download -->
+    <div class="d-flex justify-content-between mb-3">
+      <input
+        type="text"
+        id="searchUser"
+        class="form-control w-50"
+        placeholder="🔍 Search by name or email..."
+      />
+      <button class="btn btn-danger" onclick="downloadPDF()">
+        <i class="fas fa-file-pdf me-2"></i>Download PDF
+      </button>
+    </div>
+
+    <!-- Leaderboard Table -->
+    <div class="card shadow-lg border-0">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" id="leaderboardTable">
+            <thead class="table-dark">
+              <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Score</th>
+                <th>Accuracy</th>
+                <th>Time Taken</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardBody">
+              <tr>
+                <td colspan="6" class="text-center py-5">
+                  <div class="spinner-border text-primary"></div>
+                  <p class="mt-2">Loading leaderboard...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    let currentPeriod = "today";
+    let allData = [];
+
+    window.addEventListener("DOMContentLoaded", function () {
+      loadLeaderboard();
+      // Auto-refresh every 30 seconds
+      setInterval(loadLeaderboard, 30000);
+    });
+
+    // Period tab switching
+    document.querySelectorAll("#periodTabs button").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("#periodTabs button").forEach((b) =>
+          b.classList.remove("active")
+        );
+        this.classList.add("active");
+        currentPeriod = this.dataset.period;
+        loadLeaderboard();
+      });
+    });
+
+    function loadLeaderboard() {
+      // Get all quiz attempts from localStorage
+      const quizzes = JSON.parse(localStorage.getItem("quizzes") || "[]");
+      const attempts = JSON.parse(localStorage.getItem("quizAttempts") || "[]");
+
+      // Generate sample leaderboard data if empty
+      if (attempts.length === 0) {
+        generateSampleData();
+        return;
+      }
+
+      // Filter by period
+      const filteredAttempts = filterByPeriod(attempts, currentPeriod);
+
+      // Calculate stats
+      updateStats(filteredAttempts);
+
+      // Display leaderboard
+      displayLeaderboard(filteredAttempts);
+    }
+
+    function generateSampleData() {
+      const sampleData = [
+        {
+          rank: 1,
+          name: "Rahul Sharma",
+          score: 28,
+          total: 30,
+          accuracy: 93.33,
+          time: "25:30",
+          date: "2025-10-18",
+        },
+        {
+          rank: 2,
+          name: "Priya Singh",
+          score: 27,
+          total: 30,
+          accuracy: 90.0,
+          time: "27:15",
+          date: "2025-10-18",
+        },
+        {
+          rank: 3,
+          name: "Amit Kumar",
+          score: 26,
+          total: 30,
+          accuracy: 86.67,
+          time: "23:45",
+          date: "2025-10-18",
+        },
+        {
+          rank: 4,
+          name: "Sneha Patel",
+          score: 25,
+          total: 30,
+          accuracy: 83.33,
+          time: "28:00",
+          date: "2025-10-18",
+        },
+        {
+          rank: 5,
+          name: "Vikram Reddy",
+          score: 24,
+          total: 30,
+          accuracy: 80.0,
+          time: "26:20",
+          date: "2025-10-18",
+        },
+        {
+          rank: 6,
+          name: "Anjali Gupta",
+          score: 23,
+          total: 30,
+          accuracy: 76.67,
+          time: "29:10",
+          date: "2025-10-18",
+        },
+        {
+          rank: 7,
+          name: "Karthik Iyer",
+          score: 22,
+          total: 30,
+          accuracy: 73.33,
+          time: "24:50",
+          date: "2025-10-18",
+        },
+        {
+          rank: 8,
+          name: "Neha Verma",
+          score: 21,
+          total: 30,
+          accuracy: 70.0,
+          time: "28:30",
+          date: "2025-10-18",
+        },
+        {
+          rank: 9,
+          name: "Rohan Das",
+          score: 20,
+          total: 30,
+          accuracy: 66.67,
+          time: "27:00",
+          date: "2025-10-18",
+        },
+        {
+          rank: 10,
+          name: "Pooja Nair",
+          score: 19,
+          total: 30,
+          accuracy: 63.33,
+          time: "29:45",
+          date: "2025-10-18",
+        },
+      ];
+
+      allData = sampleData;
+      updateStats(sampleData);
+      displayLeaderboard(sampleData);
+    }
+
+    function filterByPeriod(attempts, period) {
+      const now = new Date();
+      const today = now.toISOString().split("T")[0];
+
+      return attempts.filter((attempt) => {
+        const attemptDate = new Date(attempt.date);
+        switch (period) {
+          case "today":
+            return attempt.date === today;
+          case "week":
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return attemptDate >= weekAgo;
+          case "month":
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            return attemptDate >= monthAgo;
+          default:
+            return true;
+        }
+      });
+    }
+
+    function updateStats(data) {
+      document.getElementById("totalParticipants").textContent = data.length;
+
+      if (data.length > 0) {
+        const avgScore =
+          data.reduce((sum, d) => sum + d.accuracy, 0) / data.length;
+        document.getElementById("averageScore").textContent = avgScore.toFixed(1) + "%";
+
+        const maxScore = Math.max(...data.map((d) => d.accuracy));
+        document.getElementById("highestScore").textContent = maxScore.toFixed(1) + "%";
+
+        // Calculate percentile (example fixed value here)
+        document.getElementById("yourPercentile").textContent = "75th";
+      }
+    }
+
+    function displayLeaderboard(data) {
+      const tbody = document.getElementById("leaderboardBody");
+      const currentUser = localStorage.getItem("userName") || "";
+
+      if (data.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="6" class="text-center py-5">No data available for this period</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data
+        .map((entry, index) => {
+          const isCurrentUser = entry.name === currentUser;
+          const rowClass = isCurrentUser ? "table-warning" : "";
+          let trophy = "";
+
+          if (index === 0) trophy = "🥇";
+          else if (index === 1) trophy = "🥈";
+          else if (index === 2) trophy = "🥉";
+
+          return `
+                    <tr class="${rowClass}">
+                        <td class="fw-bold">${trophy} ${entry.rank || index + 1}</td>
+                        <td>${entry.name} ${
+            isCurrentUser ? '<span class="badge bg-primary">You</span>' : ""
+          }</td>
+                        <td><strong>${entry.score}/${entry.total || 30}</strong></td>
+                        <td><span class="badge bg-success">${entry.accuracy.toFixed(2)}%</span></td>
+                        <td><i class="fas fa-clock me-1"></i>${entry.time}</td>
+                        <td>${entry.date}</td>
+                    </tr>
+                `;
+        })
+        .join("");
+    }
+
+    // Search functionality
+    document.getElementById("searchUser").addEventListener("input", function (e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll("#leaderboardBody tr");
+
+      rows.forEach((row) => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? "" : "none";
+      });
+    });
+
+    // Download PDF placeholder
+    function downloadPDF() {
+      Swal.fire({
+        title: "Download Leaderboard",
+        text: "PDF download feature coming soon!",
+        icon: "info",
+        confirmButtonText: "OK",
+      });
+    }
+  </script>
+</body>
+</html>
