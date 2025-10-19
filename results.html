@@ -25,8 +25,8 @@
                 <i class="fas fa-graduation-cap me-2"></i>Quiz Portal
             </a>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="index.html">Home</a>
-                <a class="nav-link" href="leaderboard.html">Leaderboard</a>
+                <a class="nav-link" href="index.html"><i class="fas fa-home me-1"></i>Home</a>
+                <a class="nav-link" href="leaderboard.html"><i class="fas fa-trophy me-1"></i>Leaderboard</a>
             </div>
         </div>
     </nav>
@@ -80,39 +80,64 @@
         <div class="card ranking-message-card text-center p-4 mb-5 shadow-sm rounded">
             <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
             <h3>Want to see your rank?</h3>
-            <p>Visit us again today at <strong>9:00 PM IST</strong> to view the live leaderboard!</p>
+            <p>Visit the leaderboard to compare your performance with others!</p>
             <div class="d-flex justify-content-center gap-3 flex-wrap mt-3">
+                <a href="leaderboard.html" class="btn btn-warning btn-lg">
+                    <i class="fas fa-trophy me-2"></i>View Leaderboard
+                </a>
                 <button class="btn btn-outline-primary" id="reminderBtn">
-                    <i class="fas fa-bell me-2"></i>Set Reminder
+                    <i class="fas fa-bell me-2"></i>Set Reminder for 9 PM
                 </button>
-                <button class="btn btn-success" onclick="shareOnWhatsApp()">
-                    <i class="fab fa-whatsapp me-2"></i>Share on WhatsApp
-                </button>
-                <button class="btn btn-info text-white" onclick="shareOnTelegram()">
-                    <i class="fab fa-telegram me-2"></i>Share on Telegram
-                </button>
-                <button class="btn btn-dark" onclick="shareOnTwitter()">
-                    <i class="fab fa-twitter me-2"></i>Share on Twitter
-                </button>
+            </div>
+        </div>
+
+        <!-- Share Options -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body text-center">
+                <h5 class="mb-3"><i class="fas fa-share-alt me-2 text-primary"></i>Share Your Achievement</h5>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <button class="btn btn-success" onclick="shareOnWhatsApp()">
+                        <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                    </button>
+                    <button class="btn btn-info text-white" onclick="shareOnTelegram()">
+                        <i class="fab fa-telegram me-2"></i>Telegram
+                    </button>
+                    <button class="btn btn-dark" onclick="shareOnTwitter()">
+                        <i class="fab fa-twitter me-2"></i>Twitter
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Detailed Solutions -->
         <section>
-            <button class="btn btn-outline-primary mb-4" id="toggleSolutionsBtn">
-                <i class="fas fa-eye me-2"></i>View Detailed Solutions
-            </button>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3><i class="fas fa-book-open me-2 text-primary"></i>Detailed Solutions</h3>
+                <button class="btn btn-outline-primary" id="toggleSolutionsBtn">
+                    <i class="fas fa-eye me-2"></i>View Solutions
+                </button>
+            </div>
 
             <div id="solutionsAccordion" class="accordion" style="display:none;">
                 <!-- Solutions dynamically inserted here -->
             </div>
 
-            <div class="text-center mt-3">
+            <div class="text-center mt-4" id="printSection" style="display:none;">
                 <button class="btn btn-outline-secondary" onclick="window.print()">
                     <i class="fas fa-print me-2"></i>Print Solutions
                 </button>
             </div>
         </section>
+
+        <!-- Action Buttons -->
+        <div class="text-center mt-5 d-flex justify-content-center gap-3 flex-wrap">
+            <a href="index.html" class="btn btn-primary btn-lg px-5">
+                <i class="fas fa-home me-2"></i>Back to Home
+            </a>
+            <a href="leaderboard.html" class="btn btn-warning btn-lg px-5">
+                <i class="fas fa-trophy me-2"></i>View Rankings
+            </a>
+        </div>
     </main>
 
     <!-- Bootstrap JS -->
@@ -130,11 +155,17 @@
         function loadResults() {
             const results = JSON.parse(localStorage.getItem('currentQuizResults') || '{}');
             if (!results.score && results.score !== 0) {
-                window.location.href = 'index.html'; // Redirect if no results
+                Swal.fire({
+                    title: 'No Results Found',
+                    text: 'Please take a quiz first',
+                    icon: 'warning'
+                }).then(() => {
+                    window.location.href = 'index.html';
+                });
                 return;
             }
 
-            const { total, correct, incorrect, unattempted, percentage, timeTaken, answers } = results;
+            const { total, correct, incorrect, unattempted, percentage, timeTaken } = results;
 
             document.getElementById('scorePercentage').textContent = Math.round(percentage) + '%';
             document.getElementById('scoreRatio').textContent = `${correct} / ${total}`;
@@ -142,6 +173,16 @@
             document.getElementById('incorrectCount').textContent = incorrect;
             document.getElementById('unattemptedCount').textContent = unattempted;
             document.getElementById('timeTaken').textContent = timeTaken;
+
+            // Color code based on score
+            const circle = document.getElementById('scoreCircle');
+            if (percentage >= 80) {
+                circle.style.borderColor = '#10b981';
+            } else if (percentage >= 60) {
+                circle.style.borderColor = '#f59e0b';
+            } else {
+                circle.style.borderColor = '#ef4444';
+            }
 
             populateSolutions();
         }
@@ -167,21 +208,25 @@
                     let optionClass = '';
                     if (idx === q.correctAnswer) optionClass = 'correct-option';
                     if (idx === userAnswer && idx !== q.correctAnswer) optionClass = 'wrong-option';
-                    return `<div class="option-item ${optionClass}">${String.fromCharCode(65 + idx)}. ${opt}</div>`;
+                    return `<div class="option-item ${optionClass} mb-2">${String.fromCharCode(65 + idx)}. ${opt}</div>`;
                 }).join('');
 
                 container.innerHTML += `
                 <div class="accordion-item solution-item ${statusClass}">
                   <h2 class="accordion-header" id="heading${i}">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${i}" aria-expanded="false" aria-controls="collapse${i}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${i}">
                       <i class="fas ${icon} text-${iconColor} me-3"></i>
-                      Question ${i + 1}: ${q.question}
+                      <strong>Question ${i + 1}:</strong>&nbsp;${q.question}
                     </button>
                   </h2>
-                  <div id="collapse${i}" class="accordion-collapse collapse" aria-labelledby="heading${i}" data-bs-parent="#solutionsAccordion">
+                  <div id="collapse${i}" class="accordion-collapse collapse" data-bs-parent="#solutionsAccordion">
                     <div class="accordion-body">
-                      <div>${optionsHtml}</div>
-                      <div class="explanation-box mt-3"><strong>Explanation:</strong><br />${q.explanation}</div>
+                      <div class="mb-3">${optionsHtml}</div>
+                      <div class="explanation-box">
+                        <strong><i class="fas fa-lightbulb me-2 text-warning"></i>Explanation:</strong>
+                        <p class="mt-2 mb-0">${q.explanation || 'No explanation provided'}</p>
+                      </div>
+                      ${notAttempted ? '<div class="alert alert-warning mt-3 mb-0"><i class="fas fa-info-circle me-2"></i>You did not attempt this question</div>' : ''}
                     </div>
                   </div>
                 </div>`;
@@ -191,13 +236,17 @@
         function setupSolutionToggle() {
             const button = document.getElementById('toggleSolutionsBtn');
             const container = document.getElementById('solutionsAccordion');
+            const printSection = document.getElementById('printSection');
+            
             button.addEventListener('click', () => {
                 if (container.style.display === 'none' || container.style.display === '') {
                     container.style.display = 'block';
-                    button.innerHTML = '<i class="fas fa-eye-slash me-2"></i>Hide Detailed Solutions';
+                    printSection.style.display = 'block';
+                    button.innerHTML = '<i class="fas fa-eye-slash me-2"></i>Hide Solutions';
                 } else {
                     container.style.display = 'none';
-                    button.innerHTML = '<i class="fas fa-eye me-2"></i>View Detailed Solutions';
+                    printSection.style.display = 'none';
+                    button.innerHTML = '<i class="fas fa-eye me-2"></i>View Solutions';
                 }
             });
         }
@@ -208,32 +257,31 @@
                 if ('Notification' in window) {
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
-                        alert('Reminder enabled! You will be notified at 9:00 PM IST.');
-                        // In production, implement real scheduled notifications via service worker/push
+                        Swal.fire('Success!', 'Reminder enabled! You will be notified at 9:00 PM IST.', 'success');
                     } else {
-                        alert('Notification permission denied.');
+                        Swal.fire('Denied', 'Notification permission was denied.', 'error');
                     }
                 } else {
-                    alert('Notifications are not supported by your browser.');
+                    Swal.fire('Not Supported', 'Notifications are not supported by your browser.', 'info');
                 }
             });
         }
 
         function shareOnWhatsApp() {
             const results = JSON.parse(localStorage.getItem('currentQuizResults') || '{}');
-            const text = `I scored ${results.correct} out of ${results.total} (${Math.round(results.percentage)}%) on Daily Exam Quiz Portal! Try it out!`;
+            const text = `🎯 I scored ${results.correct} out of ${results.total} (${Math.round(results.percentage)}%) on Daily Exam Quiz Portal! Try it yourself!`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         }
 
         function shareOnTelegram() {
             const results = JSON.parse(localStorage.getItem('currentQuizResults') || '{}');
-            const text = `I scored ${results.correct} out of ${results.total} (${Math.round(results.percentage)}%) on Daily Exam Quiz Portal!`;
+            const text = `🎯 I scored ${results.correct} out of ${results.total} (${Math.round(results.percentage)}%) on Daily Exam Quiz Portal!`;
             window.open(`https://t.me/share/url?url=${window.location.origin}&text=${encodeURIComponent(text)}`, '_blank');
         }
 
         function shareOnTwitter() {
             const results = JSON.parse(localStorage.getItem('currentQuizResults') || '{}');
-            const text = `I scored ${results.correct} out of ${results.total} (${Math.round(results.percentage)}%) on Daily Exam Quiz Portal! #QuizChallenge #GovernmentExam`;
+            const text = `🎯 I scored ${results.correct}/${results.total} (${Math.round(results.percentage)}%) on Daily Exam Quiz Portal! #QuizChallenge #GovernmentExam`;
             window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${window.location.origin}`, '_blank');
         }
     </script>
