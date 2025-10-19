@@ -1,12 +1,11 @@
-// Main Application Logic - app.js
+// Main Application Logic with Email Uniqueness - app.js
 
-// Initialize sample quizzes on first load
 function initializeSampleData() {
   if (!localStorage.getItem('quizzes')) {
     const sampleQuizzes = [
       {
         quizId: 'quiz_sample_1',
-        date: '2025-10-18',
+        date: '2025-10-19',
         subject: 'General Knowledge',
         totalQuestions: 30,
         timeLimit: 1800,
@@ -15,7 +14,7 @@ function initializeSampleData() {
       },
       {
         quizId: 'quiz_sample_2',
-        date: '2025-10-19',
+        date: '2025-10-20',
         subject: 'English',
         totalQuestions: 30,
         timeLimit: 1800,
@@ -27,49 +26,18 @@ function initializeSampleData() {
   }
 }
 
-// Generate sample questions for a subject
 function generateSampleQuestions(subject, count) {
   const questions = [];
   const sampleTemplates = {
     'General Knowledge': [
-      {
-        q: 'What is the capital of India?',
-        opts: ['Mumbai', 'New Delhi', 'Kolkata', 'Chennai'],
-        ans: 1,
-        exp: 'New Delhi is the capital of India.',
-      },
-      {
-        q: 'Who is known as the Father of the Nation in India?',
-        opts: ['Jawaharlal Nehru', 'Mahatma Gandhi', 'Sardar Patel', 'Subhas Chandra Bose'],
-        ans: 1,
-        exp: 'Mahatma Gandhi is called the Father of the Nation.',
-      },
-      {
-        q: 'Which is the largest state in India by area?',
-        opts: ['Maharashtra', 'Rajasthan', 'Madhya Pradesh', 'Uttar Pradesh'],
-        ans: 1,
-        exp: 'Rajasthan is the largest state by area.',
-      },
+      { q: 'What is the capital of India?', opts: ['Mumbai', 'New Delhi', 'Kolkata', 'Chennai'], ans: 1, exp: 'New Delhi is the capital of India.' },
+      { q: 'Who is known as the Father of the Nation in India?', opts: ['Jawaharlal Nehru', 'Mahatma Gandhi', 'Sardar Patel', 'Subhas Chandra Bose'], ans: 1, exp: 'Mahatma Gandhi is called the Father of the Nation.' },
+      { q: 'Which is the largest state in India by area?', opts: ['Maharashtra', 'Rajasthan', 'Madhya Pradesh', 'Uttar Pradesh'], ans: 1, exp: 'Rajasthan is the largest state by area.' },
     ],
     English: [
-      {
-        q: 'Choose the correct spelling:',
-        opts: ['Accommodate', 'Accomodate', 'Acommodate', 'Acomodate'],
-        ans: 0,
-        exp: 'Accommodate is the correct spelling.',
-      },
-      {
-        q: "What is the synonym of 'happy'?",
-        opts: ['Sad', 'Joyful', 'Angry', 'Tired'],
-        ans: 1,
-        exp: 'Joyful means happy.',
-      },
-      {
-        q: "Choose the antonym of 'difficult':",
-        opts: ['Hard', 'Tough', 'Easy', 'Complex'],
-        ans: 2,
-        exp: 'Easy is the opposite of difficult.',
-      },
+      { q: 'Choose the correct spelling:', opts: ['Accommodate', 'Accomodate', 'Acommodate', 'Acomodate'], ans: 0, exp: 'Accommodate is the correct spelling.' },
+      { q: "What is the synonym of 'happy'?", opts: ['Sad', 'Joyful', 'Angry', 'Tired'], ans: 1, exp: 'Joyful means happy.' },
+      { q: "Choose the antonym of 'difficult':", opts: ['Hard', 'Tough', 'Easy', 'Complex'], ans: 2, exp: 'Easy is the opposite of difficult.' },
     ],
   };
 
@@ -91,15 +59,13 @@ function generateSampleQuestions(subject, count) {
 
 window.addEventListener('DOMContentLoaded', function () {
   initializeSampleData();
-
   loadQuizDates();
   setupSubjectSelection();
   setupFormValidation();
-
   loadQuizDashboard();
+  updateStats();
 });
 
-// Load quiz dates into dropdown
 function loadQuizDates() {
   const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
   const dateSelect = document.getElementById('quizDate');
@@ -119,7 +85,6 @@ function loadQuizDates() {
   });
 }
 
-// Subject card selection
 function setupSubjectSelection() {
   const subjectCards = document.querySelectorAll('.subject-card');
   const selectedSubjectInput = document.getElementById('selectedSubject');
@@ -137,7 +102,6 @@ function setupSubjectSelection() {
   });
 }
 
-// Form validation and enable/disable Start Quiz button
 function setupFormValidation() {
   const form = document.getElementById('preQuizForm');
   if (!form) return;
@@ -179,7 +143,6 @@ function validateForm() {
   }
 }
 
-// Handle quiz start, save user session, and redirect to quiz
 function handleQuizStart(e) {
   e.preventDefault();
 
@@ -188,16 +151,40 @@ function handleQuizStart(e) {
   const quizDate = document.getElementById('quizDate').value;
   const subject = document.getElementById('selectedSubject').value;
 
-  // Find matching quiz
   const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
   const quiz = quizzes.find((q) => q.date === quizDate && q.subject === subject);
 
   if (!quiz) {
-    alert('Quiz not found for selected date and subject');
+    Swal.fire('Error', 'Quiz not found for selected date and subject', 'error');
     return;
   }
 
-  // Save user session
+  // Check if user already attempted this quiz using email
+  const attempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
+  const alreadyAttempted = attempts.find(a => a.email === email && a.quizId === quiz.quizId);
+
+  if (alreadyAttempted) {
+    Swal.fire({
+      title: 'Already Attempted',
+      text: `You have already taken this quiz on ${alreadyAttempted.date}. Your score: ${alreadyAttempted.score}/${alreadyAttempted.total}`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Retake Quiz',
+      cancelButtonText: 'View Results'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        startQuizSession(fullName, email, quiz);
+      } else {
+        window.location.href = 'leaderboard.html';
+      }
+    });
+    return;
+  }
+
+  startQuizSession(fullName, email, quiz);
+}
+
+function startQuizSession(fullName, email, quiz) {
   localStorage.setItem(
     'userSession',
     JSON.stringify({
@@ -207,51 +194,53 @@ function handleQuizStart(e) {
     })
   );
 
-  // Navigate to quiz page
   window.location.href = 'quiz.html';
 }
 
-// Load quiz dashboard showing quizzes with status and start/retry buttons
 function loadQuizDashboard() {
   const quizCardsContainer = document.getElementById('quizCards');
   if (!quizCardsContainer) return;
 
   const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
   const attempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
+  const session = JSON.parse(localStorage.getItem('userSession') || '{}');
 
   if (quizzes.length === 0) {
-    quizCardsContainer.innerHTML =
-      '<div class="col-12 text-center"><p>No quizzes available yet.</p></div>';
+    quizCardsContainer.innerHTML = '<div class="col-12 text-center"><p class="text-muted">No quizzes available yet. Check back later!</p></div>';
     return;
   }
 
+  document.getElementById('quizCount').textContent = quizzes.length;
+
   quizCardsContainer.innerHTML = quizzes
     .map((quiz) => {
-      const attempt = attempts.find((a) => a.quizId === quiz.quizId);
+      const attempt = attempts.find((a) => a.quizId === quiz.quizId && a.email === session.email);
       const attempted = !!attempt;
       const statusBadge = attempted
-        ? '<span class="badge bg-success">Completed</span>'
-        : '<span class="badge bg-secondary">Pending</span>';
-      const score = attempted ? `Score: ${attempt.score}/${quiz.totalQuestions}` : '';
+        ? '<span class="badge bg-success"><i class="fas fa-check me-1"></i>Completed</span>'
+        : '<span class="badge bg-secondary"><i class="fas fa-clock me-1"></i>Pending</span>';
+      const score = attempted ? `<p class="text-success fw-bold mb-2"><i class="fas fa-award me-1"></i>Score: ${attempt.score}/${quiz.totalQuestions}</p>` : '';
 
       return `
-        <div class="col-md-6 col-lg-4">
-          <div class="card quiz-card">
+        <div class="col-lg-4 col-md-6">
+          <div class="card quiz-card h-100 shadow-sm hover-lift">
             <div class="card-body">
-              <div class="d-flex justify-content-between mb-2">
-                <h5 class="card-title mb-0">${quiz.subject}</h5>
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <h5 class="card-title mb-0 fw-bold">
+                  <i class="fas fa-book-reader me-2 text-primary"></i>${quiz.subject}
+                </h5>
                 ${statusBadge}
               </div>
               <p class="text-muted mb-2">
-                <i class="fas fa-calendar me-2"></i>${new Date(quiz.date).toLocaleDateString()}
+                <i class="fas fa-calendar-alt me-2"></i>${new Date(quiz.date).toLocaleDateString('en-IN')}
               </p>
               <div class="d-flex justify-content-between text-muted small mb-3">
                 <span><i class="fas fa-question-circle me-1"></i>${quiz.totalQuestions} Questions</span>
-                <span><i class="fas fa-clock me-1"></i>${Math.ceil(quiz.timeLimit / 60)} min</span>
+                <span><i class="fas fa-hourglass-half me-1"></i>${Math.ceil(quiz.timeLimit / 60)} min</span>
               </div>
-              ${score ? `<p class="text-success fw-bold">${score}</p>` : ''}
-              <button class="btn btn-primary btn-sm w-100" onclick="startQuiz('${quiz.quizId}')">
-                ${attempted ? 'Retake Quiz' : 'Start Quiz'}
+              ${score}
+              <button class="btn ${attempted ? 'btn-outline-primary' : 'btn-primary'} w-100" onclick="startQuizFromCard('${quiz.quizId}')">
+                <i class="fas ${attempted ? 'fa-redo' : 'fa-play'} me-2"></i>${attempted ? 'Retake Quiz' : 'Start Quiz'}
               </button>
             </div>
           </div>
@@ -261,30 +250,67 @@ function loadQuizDashboard() {
     .join('');
 }
 
-// Start quiz action for dashboard buttons
-function startQuiz(quizId) {
+function startQuizFromCard(quizId) {
   const userName = prompt('Enter your name:');
+  if (!userName) return;
+  
   const email = prompt('Enter your email:');
+  if (!email || !email.includes('@')) {
+    Swal.fire('Error', 'Please enter a valid email address', 'error');
+    return;
+  }
 
-  if (!userName || !email) return;
+  const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
+  const quiz = quizzes.find(q => q.quizId === quizId);
 
-  localStorage.setItem(
-    'userSession',
-    JSON.stringify({
-      userName,
-      email,
-      currentQuizId: quizId,
-    })
-  );
+  if (!quiz) {
+    Swal.fire('Error', 'Quiz not found', 'error');
+    return;
+  }
 
-  window.location.href = 'quiz.html';
+  // Check for duplicate attempt
+  const attempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
+  const alreadyAttempted = attempts.find(a => a.email === email && a.quizId === quizId);
+
+  if (alreadyAttempted) {
+    Swal.fire({
+      title: 'Already Attempted',
+      text: `You have already taken this quiz. Your previous score: ${alreadyAttempted.score}/${alreadyAttempted.total}`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Retake Anyway',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        startQuizSession(userName, email, quiz);
+      }
+    });
+    return;
+  }
+
+  startQuizSession(userName, email, quiz);
 }
 
-// Logout and clear user data
 function clearSession() {
   if (confirm('Are you sure you want to logout?')) {
     localStorage.removeItem('userSession');
     localStorage.removeItem('currentQuizResults');
     window.location.href = 'index.html';
   }
+}
+
+function updateStats() {
+  const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
+  const attempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
+  
+  const totalUsersEl = document.getElementById('totalUsers');
+  const totalQuizzesEl = document.getElementById('totalQuizzes');
+  const totalAttemptsEl = document.getElementById('totalAttempts');
+  
+  if (totalQuizzesEl) totalQuizzesEl.textContent = quizzes.length + '+';
+  if (totalAttemptsEl) totalAttemptsEl.textContent = attempts.length + '+';
+  
+  // Count unique users by email
+  const uniqueEmails = new Set(attempts.map(a => a.email));
+  if (totalUsersEl) totalUsersEl.textContent = uniqueEmails.size + '+';
 }
