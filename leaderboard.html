@@ -45,9 +45,57 @@
       <h1 class="display-4 fw-bold animate-fade-in">
         <i class="fas fa-trophy text-warning me-2"></i>Live Leaderboard
       </h1>
-      <p class="lead"><i class="fas fa-info-circle me-2"></i>Rankings updated at 9:00 PM IST daily</p>
+      <p class="lead"><i class="fas fa-info-circle me-2"></i>Rankings updated in real-time</p>
       <div class="badge bg-success fs-6 pulse-animation">
         <i class="fas fa-sync-alt me-2"></i>Auto-refreshes every 30 seconds
+      </div>
+    </div>
+
+    <!-- Quiz Selector -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <div class="row align-items-center g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold mb-2">
+              <i class="fas fa-filter me-2 text-primary"></i>Select Quiz:
+            </label>
+            <select class="form-select form-select-lg" id="quizSelector">
+              <option value="all">🏆 All Quizzes Combined</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex gap-2 align-items-end h-100">
+              <button class="btn btn-primary" onclick="loadLeaderboard()">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+              </button>
+              <button class="btn btn-warning" onclick="resetFilters()">
+                <i class="fas fa-redo me-2"></i>Reset Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quiz Info Banner (shown when specific quiz selected) -->
+    <div class="alert alert-info shadow-sm" id="quizInfoBanner" style="display:none;">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h5 class="mb-2">
+            <i class="fas fa-book-reader me-2"></i>
+            <strong id="selectedQuizSubject">Subject</strong>
+          </h5>
+          <p class="mb-0">
+            <i class="fas fa-calendar me-2"></i><span id="selectedQuizDate">Date</span> &nbsp;|&nbsp;
+            <i class="fas fa-question-circle me-2"></i><span id="selectedQuizQuestions">0</span> Questions &nbsp;|&nbsp;
+            <i class="fas fa-clock me-2"></i><span id="selectedQuizDuration">0</span> Minutes
+          </p>
+        </div>
+        <div class="col-md-4 text-end">
+          <button class="btn btn-sm btn-outline-primary" onclick="viewAllQuizzes()">
+            <i class="fas fa-eye me-1"></i>View All Quizzes
+          </button>
+        </div>
       </div>
     </div>
 
@@ -108,8 +156,8 @@
         <div class="card text-center stat-card shadow-sm">
           <div class="card-body">
             <i class="fas fa-ranking-star fa-3x text-info mb-2"></i>
-            <h3 id="yourPercentile" class="mb-1">-</h3>
-            <p class="mb-0 text-muted">Your Percentile</p>
+            <h3 id="yourRank" class="mb-1">-</h3>
+            <p class="mb-0 text-muted">Your Rank</p>
           </div>
         </div>
       </div>
@@ -117,7 +165,7 @@
 
     <!-- Search and Download -->
     <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
-      <input type="text" id="searchUser" class="form-control" style="max-width: 400px;" placeholder="🔍 Search by name or email..." />
+      <input type="text" id="searchUser" class="form-control" style="max-width: 400px;" placeholder="🔍 Search by name..." />
       <button class="btn btn-danger" onclick="downloadPDF()">
         <i class="fas fa-file-pdf me-2"></i>Download PDF
       </button>
@@ -168,33 +216,114 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
     let currentPeriod = "today";
+    let currentQuizId = "all";
     let allLeaderboardData = [];
 
     window.addEventListener("DOMContentLoaded", function () {
+      loadQuizSelector();
+      checkForSpecificQuiz();
       loadLeaderboard();
+      setupEventListeners();
       // Auto-refresh every 30 seconds
       setInterval(loadLeaderboard, 30000);
     });
 
-    // Period tab switching
-    document.querySelectorAll("#periodTabs button").forEach((btn) => {
-      btn.addEventListener("click", function () {
-        document.querySelectorAll("#periodTabs button").forEach((b) => b.classList.remove("active"));
-        this.classList.add("active");
-        currentPeriod = this.dataset.period;
+    // Check if redirected from results page with specific quiz
+    function checkForSpecificQuiz() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const quizId = urlParams.get('quizId');
+      
+      if (quizId && quizId !== 'all') {
+        currentQuizId = quizId;
+        const selector = document.getElementById('quizSelector');
+        if (selector) {
+          selector.value = quizId;
+        }
+        console.log('📍 Showing leaderboard for quiz:', quizId);
+      }
+    }
+
+    // Load quiz selector dropdown
+    function loadQuizSelector() {
+      const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
+      const selector = document.getElementById('quizSelector');
+      
+      // Sort by date (newest first)
+      quizzes.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      // Clear existing options except "All Quizzes"
+      selector.innerHTML = '<option value="all">🏆 All Quizzes Combined</option>';
+      
+      quizzes.forEach(quiz => {
+        const option = document.createElement('option');
+        option.value = quiz.quizId;
+        option.textContent = `📚 ${quiz.subject} - ${new Date(quiz.date).toLocaleDateString('en-IN')}`;
+        selector.appendChild(option);
+      });
+      
+      // Set current selection
+      if (currentQuizId) {
+        selector.value = currentQuizId;
+      }
+      
+      console.log(`✅ Loaded ${quizzes.length} quizzes in selector`);
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+      // Quiz selector change
+      document.getElementById('quizSelector').addEventListener('change', function(e) {
+        currentQuizId = e.target.value;
         loadLeaderboard();
       });
-    });
+      
+      // Period tabs
+      document.querySelectorAll("#periodTabs button").forEach((btn) => {
+        btn.addEventListener("click", function () {
+          document.querySelectorAll("#periodTabs button").forEach((b) => b.classList.remove("active"));
+          this.classList.add("active");
+          currentPeriod = this.dataset.period;
+          loadLeaderboard();
+        });
+      });
+      
+      // Search
+      document.getElementById("searchUser").addEventListener("input", function (e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll("#leaderboardBody tr");
+
+        rows.forEach((row) => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(searchTerm) ? "" : "none";
+        });
+      });
+    }
 
     function loadLeaderboard() {
       const attempts = JSON.parse(localStorage.getItem("quizAttempts") || "[]");
-
+      const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
+      
+      console.log(`🔍 Loading leaderboard for: ${currentQuizId}, period: ${currentPeriod}`);
+      
       if (attempts.length === 0) {
         generateSampleData();
         return;
       }
 
-      const filteredAttempts = filterByPeriod(attempts, currentPeriod);
+      // Filter by selected quiz
+      let filteredAttempts = attempts;
+      if (currentQuizId !== 'all') {
+        filteredAttempts = attempts.filter(a => a.quizId === currentQuizId);
+        showQuizInfo(currentQuizId, quizzes);
+      } else {
+        hideQuizInfo();
+      }
+      
+      // Filter by time period
+      filteredAttempts = filterByPeriod(filteredAttempts, currentPeriod);
+      
+      // Remove duplicates (keep best attempt per user per quiz)
+      filteredAttempts = removeDuplicates(filteredAttempts);
       
       // Sort by score descending, then by time ascending
       filteredAttempts.sort((a, b) => {
@@ -207,23 +336,55 @@
       displayLeaderboard(filteredAttempts);
     }
 
+    function showQuizInfo(quizId, quizzes) {
+      const quiz = quizzes.find(q => q.quizId === quizId);
+      if (quiz) {
+        document.getElementById('quizInfoBanner').style.display = 'block';
+        document.getElementById('selectedQuizSubject').textContent = quiz.subject;
+        document.getElementById('selectedQuizDate').textContent = new Date(quiz.date).toLocaleDateString('en-IN');
+        document.getElementById('selectedQuizQuestions').textContent = quiz.totalQuestions;
+        document.getElementById('selectedQuizDuration').textContent = Math.ceil(quiz.timeLimit / 60);
+      }
+    }
+
+    function hideQuizInfo() {
+      document.getElementById('quizInfoBanner').style.display = 'none';
+    }
+
+    function removeDuplicates(attempts) {
+      const uniqueMap = new Map();
+      
+      attempts.forEach(attempt => {
+        const key = `${attempt.email}_${attempt.quizId}`;
+        
+        if (!uniqueMap.has(key)) {
+          uniqueMap.set(key, attempt);
+        } else {
+          const existing = uniqueMap.get(key);
+          // Keep better score or faster time
+          if (attempt.score > existing.score || 
+              (attempt.score === existing.score && timeToSeconds(attempt.time) < timeToSeconds(existing.time))) {
+            uniqueMap.set(key, attempt);
+          }
+        }
+      });
+      
+      return Array.from(uniqueMap.values());
+    }
+
     function timeToSeconds(time) {
+      if (!time) return 999999;
       const parts = time.split(':');
       return parseInt(parts[0]) * 60 + parseInt(parts[1]);
     }
 
     function generateSampleData() {
       const sampleData = [
-        { rank: 1, name: "Rahul Sharma", email: "rahul@example.com", score: 28, total: 30, accuracy: 93.33, time: "25:30", date: "2025-10-18" },
-        { rank: 2, name: "Priya Singh", email: "priya@example.com", score: 27, total: 30, accuracy: 90.0, time: "27:15", date: "2025-10-18" },
-        { rank: 3, name: "Amit Kumar", email: "amit@example.com", score: 26, total: 30, accuracy: 86.67, time: "23:45", date: "2025-10-18" },
-        { rank: 4, name: "Sneha Patel", email: "sneha@example.com", score: 25, total: 30, accuracy: 83.33, time: "28:00", date: "2025-10-18" },
-        { rank: 5, name: "Vikram Reddy", email: "vikram@example.com", score: 24, total: 30, accuracy: 80.0, time: "26:20", date: "2025-10-18" },
-        { rank: 6, name: "Anjali Gupta", email: "anjali@example.com", score: 23, total: 30, accuracy: 76.67, time: "29:10", date: "2025-10-18" },
-        { rank: 7, name: "Karthik Iyer", email: "karthik@example.com", score: 22, total: 30, accuracy: 73.33, time: "24:50", date: "2025-10-18" },
-        { rank: 8, name: "Neha Verma", email: "neha@example.com", score: 21, total: 30, accuracy: 70.0, time: "28:30", date: "2025-10-18" },
-        { rank: 9, name: "Rohan Das", email: "rohan@example.com", score: 20, total: 30, accuracy: 66.67, time: "27:00", date: "2025-10-18" },
-        { rank: 10, name: "Pooja Nair", email: "pooja@example.com", score: 19, total: 30, accuracy: 63.33, time: "29:45", date: "2025-10-18" },
+        { rank: 1, name: "Rahul Sharma", email: "rahul@example.com", score: 28, total: 30, accuracy: 93.33, time: "25:30", date: "2025-10-19" },
+        { rank: 2, name: "Priya Singh", email: "priya@example.com", score: 27, total: 30, accuracy: 90.0, time: "27:15", date: "2025-10-19" },
+        { rank: 3, name: "Amit Kumar", email: "amit@example.com", score: 26, total: 30, accuracy: 86.67, time: "23:45", date: "2025-10-19" },
+        { rank: 4, name: "Sneha Patel", email: "sneha@example.com", score: 25, total: 30, accuracy: 83.33, time: "28:00", date: "2025-10-19" },
+        { rank: 5, name: "Vikram Reddy", email: "vikram@example.com", score: 24, total: 30, accuracy: 80.0, time: "26:20", date: "2025-10-19" },
       ];
 
       allLeaderboardData = sampleData;
@@ -263,97 +424,75 @@
         document.getElementById("highestScore").textContent = maxScore.toFixed(1) + "%";
 
         const session = JSON.parse(localStorage.getItem('userSession') || '{}');
-        if (session.userName) {
-          const userRank = data.findIndex(d => d.userName === session.userName) + 1;
-          if (userRank > 0) {
-            const percentile = Math.round((1 - (userRank / data.length)) * 100);
-            document.getElementById("yourPercentile").textContent = percentile + "th";
+        if (session.email) {
+          const userIndex = data.findIndex(d => d.email === session.email);
+          if (userIndex >= 0) {
+            document.getElementById("yourRank").textContent = `#${userIndex + 1}`;
+          } else {
+            document.getElementById("yourRank").textContent = '-';
           }
         }
       }
     }
 
-   function displayLeaderboard(data) {
-  const tbody = document.getElementById("leaderboardBody");
-  const session = JSON.parse(localStorage.getItem('userSession') || '{}');
-  const currentUser = session.userName || "";
+    function displayLeaderboard(data) {
+      const tbody = document.getElementById("leaderboardBody");
+      const session = JSON.parse(localStorage.getItem('userSession') || '{}');
+      const currentUserEmail = session.email || "";
 
-  if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><i class="fas fa-inbox fa-3x text-muted mb-3"></i><p>No data available for this period</p></td></tr>';
-    return;
-  }
-
-  // REMOVE DUPLICATES: Keep only best attempt per email
-  const uniqueData = [];
-  const emailMap = new Map();
-
-  data.forEach(entry => {
-    const email = entry.email || entry.userName; // Use email as unique key
-    
-    if (!emailMap.has(email)) {
-      emailMap.set(email, entry);
-    } else {
-      // Keep the better score, or faster time if scores are equal
-      const existing = emailMap.get(email);
-      if (entry.score > existing.score || 
-          (entry.score === existing.score && timeToSeconds(entry.time) < timeToSeconds(existing.time))) {
-        emailMap.set(email, entry);
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><i class="fas fa-inbox fa-3x text-muted mb-3"></i><p>No attempts for this quiz/period yet</p></td></tr>';
+        return;
       }
+
+      tbody.innerHTML = data.map((entry, index) => {
+          const isCurrentUser = entry.email === currentUserEmail;
+          const rowClass = isCurrentUser ? "table-warning" : "";
+          let trophy = "";
+
+          if (index === 0) trophy = "🥇";
+          else if (index === 1) trophy = "🥈";
+          else if (index === 2) trophy = "🥉";
+
+          return `
+            <tr class="${rowClass}">
+              <td class="fw-bold">${trophy} #${index + 1}</td>
+              <td>
+                <i class="fas fa-user-circle me-2"></i>${entry.userName || entry.name} 
+                ${isCurrentUser ? '<span class="badge bg-primary ms-2">You</span>' : ""}
+              </td>
+              <td><strong>${entry.score}/${entry.total || 30}</strong></td>
+              <td><span class="badge bg-success">${(entry.accuracy || 0).toFixed(2)}%</span></td>
+              <td><i class="fas fa-stopwatch me-1"></i>${entry.time}</td>
+              <td><i class="fas fa-calendar-day me-1"></i>${entry.date}</td>
+            </tr>
+          `;
+        }).join("");
     }
-  });
 
-  // Convert map back to array and sort
-  const deduplicatedData = Array.from(emailMap.values());
-  deduplicatedData.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return timeToSeconds(a.time) - timeToSeconds(b.time);
-  });
+    function resetFilters() {
+      currentQuizId = 'all';
+      currentPeriod = 'today';
+      document.getElementById('quizSelector').value = 'all';
+      document.querySelectorAll("#periodTabs button").forEach((b) => b.classList.remove("active"));
+      document.querySelector("#periodTabs button[data-period='today']").classList.add("active");
+      loadLeaderboard();
+    }
 
-  tbody.innerHTML = deduplicatedData.map((entry, index) => {
-      const isCurrentUser = entry.userName === currentUser || entry.email === session.email;
-      const rowClass = isCurrentUser ? "table-warning" : "";
-      let trophy = "";
-
-      if (index === 0) trophy = "🥇";
-      else if (index === 1) trophy = "🥈";
-      else if (index === 2) trophy = "🥉";
-
-      return `
-        <tr class="${rowClass}">
-          <td class="fw-bold">${trophy} #${index + 1}</td>
-          <td><i class="fas fa-user-circle me-2"></i>${entry.userName || entry.name} ${isCurrentUser ? '<span class="badge bg-primary ms-2">You</span>' : ""}</td>
-          <td><strong>${entry.score}/${entry.total || 30}</strong></td>
-          <td><span class="badge bg-success">${(entry.accuracy || 0).toFixed(2)}%</span></td>
-          <td><i class="fas fa-stopwatch me-1"></i>${entry.time}</td>
-          <td><i class="fas fa-calendar-day me-1"></i>${entry.date}</td>
-        </tr>
-      `;
-    }).join("");
-}
-
-function timeToSeconds(time) {
-  if (!time) return 999999;
-  const parts = time.split(':');
-  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-}
-
-
-    // Search functionality
-    document.getElementById("searchUser").addEventListener("input", function (e) {
-      const searchTerm = e.target.value.toLowerCase();
-      const rows = document.querySelectorAll("#leaderboardBody tr");
-
-      rows.forEach((row) => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? "" : "none";
-      });
-    });
+    function viewAllQuizzes() {
+      window.location.href = 'index.html';
+    }
 
     // PDF Download Function
     function downloadPDF() {
       try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
+
+        // Get quiz info
+        const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
+        const quiz = quizzes.find(q => q.quizId === currentQuizId);
+        const quizName = currentQuizId === 'all' ? 'All Quizzes' : (quiz ? quiz.subject : 'Selected Quiz');
 
         // Add title
         doc.setFontSize(20);
@@ -362,8 +501,9 @@ function timeToSeconds(time) {
 
         doc.setFontSize(12);
         doc.setTextColor(0, 0, 0);
-        doc.text(`Period: ${currentPeriod.toUpperCase()}`, 105, 30, { align: "center" });
-        doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 37, { align: "center" });
+        doc.text(`Quiz: ${quizName}`, 105, 30, { align: "center" });
+        doc.text(`Period: ${currentPeriod.toUpperCase()}`, 105, 37, { align: "center" });
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 44, { align: "center" });
 
         // Prepare table data
         const tableData = allLeaderboardData.map((entry, index) => [
@@ -377,7 +517,7 @@ function timeToSeconds(time) {
 
         // Add table
         doc.autoTable({
-          startY: 45,
+          startY: 50,
           head: [["Rank", "Name", "Score", "Accuracy", "Time", "Date"]],
           body: tableData,
           theme: "grid",
@@ -387,11 +527,12 @@ function timeToSeconds(time) {
         });
 
         // Save PDF
-        doc.save(`leaderboard-${currentPeriod}-${new Date().toISOString().split('T')[0]}.pdf`);
+        const fileName = `leaderboard-${quizName.replace(/\s+/g, '-')}-${currentPeriod}-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
 
         Swal.fire({
           title: "Success!",
-          text: "Leaderboard PDF downloaded successfully!",
+          text: "Leaderboard PDF downloaded!",
           icon: "success",
           timer: 2000,
           showConfirmButton: false
@@ -400,7 +541,7 @@ function timeToSeconds(time) {
         console.error("PDF generation error:", error);
         Swal.fire({
           title: "Error",
-          text: "Failed to generate PDF. Please try again.",
+          text: "Failed to generate PDF",
           icon: "error"
         });
       }
