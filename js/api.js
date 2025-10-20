@@ -1,7 +1,11 @@
 // Google Sheets API Integration - api.js
 
 // 🔴 IMPORTANT: Replace this URL with your actual Google Apps Script Web App URL
-const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMyJN6l2GMr5asXXuEYi3LpY52jDnweNAz5yAtDoCQSzuhOjA7hfK-uoIhRMfzqopL/exec';
+const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz6B8oeyy7hVKvc0b_cjnkOawVmdMEicZipWD7j-Q8rMhUZH8wYvywjAceFbulrT8VM/exec';
+
+
+
+
 
 // =========================================================
 // FETCH ALL QUIZZES FROM GOOGLE SHEETS (NEW)
