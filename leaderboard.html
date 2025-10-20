@@ -100,29 +100,43 @@
     </div>
 
     <!-- Time Period Tabs -->
-    <ul class="nav nav-pills mb-4 justify-content-center" id="periodTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-period="today" type="button" role="tab">
-          <i class="fas fa-calendar-day me-1"></i>Today
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" data-period="week" type="button" role="tab">
-          <i class="fas fa-calendar-week me-1"></i>This Week
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" data-period="month" type="button" role="tab">
-          <i class="fas fa-calendar-alt me-1"></i>This Month
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" data-period="all" type="button" role="tab">
-          <i class="fas fa-infinity me-1"></i>All Time
-        </button>
-      </li>
-    </ul>
 
+
+
+
+<!-- Time Period Tabs -->
+<ul class="nav nav-pills mb-4 justify-content-center" id="periodTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-period="today" type="button" role="tab">
+      <i class="fas fa-calendar-day me-1"></i>Today
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-period="week" type="button" role="tab">
+      <i class="fas fa-calendar-week me-1"></i>This Week
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-period="month" type="button" role="tab">
+      <i class="fas fa-calendar-alt me-1"></i>This Month
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" data-period="all" type="button" role="tab">
+      <i class="fas fa-infinity me-1"></i>All Time
+    </button>
+  </li>
+</ul>
+
+
+
+
+
+
+
+
+
+    
     <!-- Stats Dashboard -->
     <div class="row g-3 mb-4">
       <div class="col-lg-3 col-md-6">
@@ -235,7 +249,7 @@
 
   <!-- Leaderboard Script -->
   <script>
-    let currentPeriod = "today";
+    let currentPeriod = "all";
     let currentQuizId = "all";
     let allLeaderboardData = [];
 
@@ -562,9 +576,7 @@
 
 
 
-
-
-    function displayLeaderboard(data) {
+function displayLeaderboard(data) {
   const tbody = document.getElementById("leaderboardBody");
   const session = JSON.parse(localStorage.getItem('userSession') || '{}');
   const currentUserEmail = session.email || "";
@@ -589,36 +601,43 @@
       else if (index === 1) trophy = "🥈";
       else if (index === 2) trophy = "🥉";
 
-      // FIX: Format time properly
+      // FIX: Format time properly (MM:SS format)
       let displayTime = entry.time || '00:00';
       
-      // If time looks like a timestamp (contains 'T' or year 1899), convert it
+      // If time looks like a timestamp, try to extract or default to 00:00
       if (displayTime.includes('T') || displayTime.includes('1899')) {
         console.warn('⚠️ Invalid time format detected:', displayTime);
         displayTime = '00:00'; // Default fallback
       }
 
-      // FIX: Format date properly
-      let displayDate = entry.date || '';
+      // FIX: Show ATTEMPT DATE (when user took quiz)
+      let displayDate = '';
       
       try {
-        // If date is ISO format, convert to readable format
-        if (displayDate.includes('T')) {
-          displayDate = new Date(displayDate).toISOString().split('T')[0];
+        // Use entry.date (attempt date) or entry.attemptDate
+        let dateStr = entry.date || entry.attemptDate || '';
+        
+        // Clean up if it's ISO format with timestamp
+        if (dateStr.includes('T')) {
+          dateStr = dateStr.split('T')[0]; // Extract date part (YYYY-MM-DD)
         }
         
-        // Format as Oct 19, 2025
-        const dateObj = new Date(displayDate);
+        // Parse and format as "20 Oct 2025"
+        const dateObj = new Date(dateStr);
+        
         if (!isNaN(dateObj.getTime())) {
           displayDate = dateObj.toLocaleDateString('en-IN', {
             day: 'numeric',
             month: 'short',
             year: 'numeric'
           });
+        } else {
+          // Fallback to raw date string
+          displayDate = dateStr;
         }
       } catch (e) {
-        console.error('Date format error:', e);
-        displayDate = entry.date;
+        console.error('Date parsing error:', e);
+        displayDate = entry.date || 'N/A';
       }
 
       return `
@@ -636,8 +655,6 @@
       `;
     }).join("");
 }
-
-
 
 
 
