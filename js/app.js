@@ -478,6 +478,31 @@ window.addEventListener('load', function() {
 
 
 
+// In app.js - add this sync function
+async function syncQuizzesFromServer() {
+  try {
+    if (window.QuizAPI && typeof window.QuizAPI.getQuizzes === 'function') {
+      console.log('🔄 Syncing quizzes from Google Sheets...');
+      const response = await window.QuizAPI.getQuizzes();
+      
+      if (response.status === 'success' && response.data.quizzes) {
+        localStorage.setItem('quizzes', JSON.stringify(response.data.quizzes));
+        console.log(`✅ Synced ${response.data.quizzes.length} quizzes from server`);
+        loadQuizDashboard(); // Reload with fresh data
+        updateStats();
+        return true;
+      }
+    }
+  } catch (error) {
+    console.log('⚠️ Could not sync from server:', error.message);
+  }
+  return false;
+}
+
+// Call on page load
+window.addEventListener('load', function() {
+  setTimeout(syncQuizzesFromServer, 1000);
+});
 
 
 
