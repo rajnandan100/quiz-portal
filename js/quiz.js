@@ -1,3 +1,50 @@
+
+// Add at the top of quiz.js
+let isSubmitting = false;
+
+// Update submitQuiz function
+async function submitQuiz() {
+  // Prevent duplicate submissions
+  if (isSubmitting) {
+    console.log('⚠️ Submission already in progress...');
+    return;
+  }
+
+  isSubmitting = true;
+  
+  // Disable submit button
+  const confirmBtn = document.getElementById("confirmSubmitBtn");
+  const originalBtnText = confirmBtn.innerHTML;
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+
+  try {
+    // ... existing submission code ...
+    
+    // At the end, navigate away (which will reset flag)
+    window.location.href = 'results.html';
+  } catch (error) {
+    console.error('Submission error:', error);
+    isSubmitting = false; // Reset on error
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = originalBtnText;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Updated quiz.js - Complete file with Google Sheets integration
 
 let currentQuestion = 0;
