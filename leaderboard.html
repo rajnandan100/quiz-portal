@@ -200,6 +200,17 @@
     </div>
   </main>
 
+
+
+
+
+
+
+
+
+
+
+
   <footer class="bg-dark text-white text-center py-4 mt-5">
     <div class="container">
       <p class="mb-2"><i class="fas fa-copyright me-1"></i> 2025 Daily Exam Quiz Portal. All rights reserved.</p>
@@ -212,24 +223,35 @@
     </div>
   </footer>
 
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <!-- IMPORTANT: Load api.js BEFORE leaderboard script -->
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
 
-
-
-
-
-
-
-
-
-
-<script>
+  <!-- Leaderboard Script -->
+  <script>
     let currentPeriod = "today";
     let currentQuizId = "all";
     let allLeaderboardData = [];
 
     window.addEventListener("DOMContentLoaded", async function () {
+      console.log('🚀 Leaderboard page loading...');
+      
+      // Check if QuizAPI is loaded
+      if (typeof window.QuizAPI === 'undefined') {
+        console.error('❌ QuizAPI not loaded! Check if api.js is included.');
+        alert('Error: API not loaded. Please refresh the page.');
+        return;
+      }
+      
+      console.log('✅ QuizAPI loaded successfully');
+      console.log('Available methods:', Object.keys(window.QuizAPI));
+      
       loadQuizSelector();
       checkForSpecificQuiz();
       
@@ -237,55 +259,62 @@
       await syncAttemptsFromServer();
       
       // Then load leaderboard
-      loadLeaderboard();
+      await loadLeaderboard();
       
       setupEventListeners();
       
       // Auto-refresh every 30 seconds
-      setInterval(loadLeaderboard, 30000);
+      setInterval(() => loadLeaderboard(), 30000);
     });
 
     // Sync attempts from Google Sheets on page load
     async function syncAttemptsFromServer() {
       try {
-        if (window.QuizAPI && typeof window.QuizAPI.getLeaderboard === 'function') {
-          console.log('🔄 Syncing attempts from Google Sheets...');
+        if (!window.QuizAPI || typeof window.QuizAPI.getLeaderboard !== 'function') {
+          console.warn('⚠️ QuizAPI.getLeaderboard not available');
+          return false;
+        }
+        
+        console.log('🔄 Syncing attempts from Google Sheets...');
+        
+        const serverAttempts = await window.QuizAPI.getLeaderboard('all');
+        
+        console.log('Server response:', serverAttempts);
+        
+        if (serverAttempts && serverAttempts.length > 0) {
+          // Merge with local attempts
+          const localAttempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
           
-          const serverAttempts = await window.QuizAPI.getLeaderboard('all');
+          // Create map to avoid duplicates
+          const attemptMap = new Map();
           
-          if (serverAttempts && serverAttempts.length > 0) {
-            // Merge with local attempts
-            const localAttempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
-            
-            // Create map to avoid duplicates
-            const attemptMap = new Map();
-            
-            // Add server attempts first (they are authoritative)
-            serverAttempts.forEach(attempt => {
-              const key = `${attempt.email}_${attempt.quizId}_${attempt.date}`;
+          // Add server attempts first (they are authoritative)
+          serverAttempts.forEach(attempt => {
+            const key = `${attempt.email}_${attempt.quizId}_${attempt.date}`;
+            attemptMap.set(key, attempt);
+          });
+          
+          // Add local attempts that don't exist on server
+          localAttempts.forEach(attempt => {
+            const key = `${attempt.email}_${attempt.quizId}_${attempt.date}`;
+            if (!attemptMap.has(key)) {
               attemptMap.set(key, attempt);
-            });
-            
-            // Add local attempts that don't exist on server
-            localAttempts.forEach(attempt => {
-              const key = `${attempt.email}_${attempt.quizId}_${attempt.date}`;
-              if (!attemptMap.has(key)) {
-                attemptMap.set(key, attempt);
-              }
-            });
-            
-            // Save merged attempts
-            const mergedAttempts = Array.from(attemptMap.values());
-            localStorage.setItem('quizAttempts', JSON.stringify(mergedAttempts));
-            
-            console.log(`✅ Synced ${serverAttempts.length} attempts from server`);
-            console.log(`📊 Total attempts after merge: ${mergedAttempts.length}`);
-            return true;
-          }
+            }
+          });
+          
+          // Save merged attempts
+          const mergedAttempts = Array.from(attemptMap.values());
+          localStorage.setItem('quizAttempts', JSON.stringify(mergedAttempts));
+          
+          console.log(`✅ Synced ${serverAttempts.length} attempts from server`);
+          console.log(`📊 Total attempts after merge: ${mergedAttempts.length}`);
+          return true;
+        } else {
+          console.log('⚠️ No attempts found on server');
         }
         return false;
       } catch (error) {
-        console.warn('⚠️ Could not sync attempts:', error.message);
+        console.error('❌ Sync error:', error);
         return false;
       }
     }
@@ -377,41 +406,18 @@
         </tr>
       `;
       
-      // STEP 1: Fetch attempts from Google Sheets first
-      let attempts = [];
-      try {
-        if (window.QuizAPI && typeof window.QuizAPI.getLeaderboard === 'function') {
-          console.log('📥 Fetching leaderboard from Google Sheets...');
-          
-          const serverData = await window.QuizAPI.getLeaderboard(currentQuizId);
-          
-          if (serverData && serverData.length > 0) {
-            console.log(`✅ Fetched ${serverData.length} attempts from Google Sheets`);
-            attempts = serverData;
-            
-            // Save to localStorage for offline access
-            localStorage.setItem('quizAttempts', JSON.stringify(serverData));
-          } else {
-            console.log('⚠️ No attempts found on Google Sheets');
-          }
-        }
-      } catch (error) {
-        console.warn('⚠️ Could not fetch from Google Sheets:', error.message);
-      }
+      // Load from localStorage (which should be synced from Google Sheets)
+      const attempts = JSON.parse(localStorage.getItem("quizAttempts") || "[]");
       
-      // STEP 2: If no data from server, use localStorage
-      if (attempts.length === 0) {
-        console.log('📂 Loading attempts from localStorage...');
-        attempts = JSON.parse(localStorage.getItem("quizAttempts") || "[]");
-      }
+      console.log(`📂 Loaded ${attempts.length} attempts from localStorage`);
       
-      // STEP 3: Show empty state if still no data
+      // Show empty state if no data
       if (attempts.length === 0) {
         showEmptyState();
         return;
       }
 
-      // STEP 4: Filter by selected quiz
+      // Filter by selected quiz
       let filteredAttempts = attempts;
       if (currentQuizId !== 'all') {
         filteredAttempts = attempts.filter(a => a.quizId === currentQuizId);
@@ -420,13 +426,13 @@
         hideQuizInfo();
       }
       
-      // STEP 5: Filter by time period
+      // Filter by time period
       filteredAttempts = filterByPeriod(filteredAttempts, currentPeriod);
       
-      // STEP 6: Remove duplicates (keep best attempt per user per quiz)
+      // Remove duplicates (keep best attempt per user per quiz)
       filteredAttempts = removeDuplicates(filteredAttempts);
       
-      // STEP 7: Sort by score descending, then by time ascending
+      // Sort by score descending, then by time ascending
       filteredAttempts.sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return timeToSeconds(a.time) - timeToSeconds(b.time);
@@ -439,7 +445,7 @@
       console.log(`📊 Displaying ${filteredAttempts.length} attempts on leaderboard`);
     }
 
-    // Show empty state instead of sample data
+    // Show empty state
     function showEmptyState() {
       const tbody = document.getElementById("leaderboardBody");
       tbody.innerHTML = `
@@ -489,7 +495,6 @@
           uniqueMap.set(key, attempt);
         } else {
           const existing = uniqueMap.get(key);
-          // Keep better score or faster time
           if (attempt.score > existing.score || 
               (attempt.score === existing.score && timeToSeconds(attempt.time) < timeToSeconds(existing.time))) {
             uniqueMap.set(key, attempt);
@@ -607,21 +612,15 @@
       window.location.href = 'index.html';
     }
 
-    // PDF Download Function
     function downloadPDF() {
       if (allLeaderboardData.length === 0) {
-        Swal.fire({
-          title: 'No Data',
-          text: 'No leaderboard data available to download',
-          icon: 'info'
-        });
+        Swal.fire({ title: 'No Data', text: 'No leaderboard data available', icon: 'info' });
         return;
       }
 
       try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-
         const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
         const quiz = quizzes.find(q => q.quizId === currentQuizId);
         const quizName = currentQuizId === 'all' ? 'All Quizzes' : (quiz ? quiz.subject : 'Selected Quiz');
@@ -629,7 +628,6 @@
         doc.setFontSize(20);
         doc.setTextColor(99, 102, 241);
         doc.text("Quiz Portal - Leaderboard", 105, 20, { align: "center" });
-
         doc.setFontSize(12);
         doc.setTextColor(0, 0, 0);
         doc.text(`Quiz: ${quizName}`, 105, 30, { align: "center" });
@@ -637,46 +635,24 @@
         doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 44, { align: "center" });
 
         const tableData = allLeaderboardData.map((entry, index) => [
-          index + 1,
-          entry.userName || entry.name,
-          `${entry.score}/${entry.total || 30}`,
-          `${(entry.accuracy || 0).toFixed(2)}%`,
-          entry.time,
-          entry.date
+          index + 1, entry.userName || entry.name, `${entry.score}/${entry.total || 30}`,
+          `${(entry.accuracy || 0).toFixed(2)}%`, entry.time, entry.date
         ]);
 
         doc.autoTable({
-          startY: 50,
-          head: [["Rank", "Name", "Score", "Accuracy", "Time", "Date"]],
-          body: tableData,
-          theme: "grid",
-          headStyles: { fillColor: [99, 102, 241], textColor: 255 },
-          alternateRowStyles: { fillColor: [249, 250, 251] },
-          styles: { fontSize: 10 },
+          startY: 50, head: [["Rank", "Name", "Score", "Accuracy", "Time", "Date"]], body: tableData,
+          theme: "grid", headStyles: { fillColor: [99, 102, 241], textColor: 255 },
+          alternateRowStyles: { fillColor: [249, 250, 251] }, styles: { fontSize: 10 }
         });
 
-        const fileName = `leaderboard-${quizName.replace(/\s+/g, '-')}-${currentPeriod}-${new Date().toISOString().split('T')[0]}.pdf`;
-        doc.save(fileName);
-
-        Swal.fire({
-          title: "Success!",
-          text: "Leaderboard PDF downloaded!",
-          icon: "success",
-          timer: 2000,
-          showConfirmButton: false
-        });
+        doc.save(`leaderboard-${quizName.replace(/\s+/g, '-')}-${currentPeriod}-${new Date().toISOString().split('T')[0]}.pdf`);
+        Swal.fire({ title: "Success!", text: "PDF downloaded!", icon: "success", timer: 2000, showConfirmButton: false });
       } catch (error) {
-        console.error("PDF generation error:", error);
-        Swal.fire({
-          title: "Error",
-          text: "Failed to generate PDF",
-          icon: "error"
-        });
+        Swal.fire({ title: "Error", text: "Failed to generate PDF", icon: "error" });
       }
     }
   </script>
 
-  
 
 
 
