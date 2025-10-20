@@ -111,78 +111,105 @@
         </div>
     </nav>
 
+
+
+
+
+
+
+
+    
     <!-- Hero Section with Particles -->
-    <header class="hero-section position-relative overflow-hidden">
-        <div class="particles-bg" id="particles-js"></div>
-        <div class="hero-overlay"></div>
-        <div class="container hero-content position-relative" data-aos="fade-up">
-            <div class="text-center mb-5">
-                <h1 class="display-2 fw-bold text-white mb-3 hero-title">
-                    <i class="fas fa-medal text-warning me-3"></i>
-                    Daily Exam Quiz Portal
-                </h1>
-                <p class="lead text-white fs-3 mb-4 fw-semibold hero-subtitle">
-                    <i class="fas fa-rocket me-2"></i>Prepare Smart, Score High
-                </p>
-                <div class="hero-badges d-flex justify-content-center gap-3 flex-wrap">
-                    <span class="badge bg-light text-dark fs-6 px-4 py-2">
-                        <i class="fas fa-check-circle text-success me-2"></i>Free Practice Tests
-                    </span>
-                    <span class="badge bg-light text-dark fs-6 px-4 py-2">
-                        <i class="fas fa-chart-line text-primary me-2"></i>Live Rankings
-                    </span>
-                    <span class="badge bg-light text-dark fs-6 px-4 py-2">
-                        <i class="fas fa-brain text-warning me-2"></i>Smart Learning
-                    </span>
+ <!-- Hero Section with Bubble Effects -->
+<header class="hero-section position-relative overflow-hidden">
+    <!-- Particles Container -->
+    <div id="particles-js" class="particles-bg"></div>
+    
+    <!-- Dark Overlay -->
+    <div class="hero-overlay"></div>
+    
+    <!-- Hero Content -->
+    <div class="container hero-content position-relative" data-aos="fade-up">
+        <div class="text-center mb-5">
+            <h1 class="display-2 fw-bold text-white mb-3 hero-title">
+                <i class="fas fa-medal text-warning me-3"></i>
+                Daily Exam Quiz Portal
+            </h1>
+            <p class="lead text-white fs-3 mb-4 fw-semibold hero-subtitle">
+                <i class="fas fa-rocket me-2"></i>Prepare Smart, Score High
+            </p>
+            <div class="hero-badges d-flex justify-content-center gap-3 flex-wrap">
+                <span class="badge bg-light text-dark fs-6 px-4 py-2">
+                    <i class="fas fa-check-circle text-success me-2"></i>Free Practice Tests
+                </span>
+                <span class="badge bg-light text-dark fs-6 px-4 py-2">
+                    <i class="fas fa-chart-line text-primary me-2"></i>Live Rankings
+                </span>
+                <span class="badge bg-light text-dark fs-6 px-4 py-2">
+                    <i class="fas fa-brain text-warning me-2"></i>Smart Learning
+                </span>
+            </div>
+        </div>
+
+        <div class="hero-stats-row row justify-content-center g-4 mt-4" data-aos="fade-up" data-aos-delay="200">
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="stat-card glass-card text-center p-4">
+                    <div class="stat-icon mb-3">
+                        <i class="fas fa-users fa-3x text-white"></i>
+                    </div>
+                    <h3 class="text-white fw-bold mb-1" id="totalUsers">1000+</h3>
+                    <p class="text-white-50 mb-0">Active Users</p>
                 </div>
             </div>
-
-            <div class="hero-stats-row row justify-content-center g-4 mt-4" data-aos="fade-up" data-aos-delay="200">
-                <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="stat-card glass-card text-center p-4">
-                        <div class="stat-icon mb-3">
-                            <i class="fas fa-users fa-3x text-white"></i>
-                        </div>
-                        <h3 class="text-white fw-bold mb-1" id="totalUsers">1000+</h3>
-                        <p class="text-white-50 mb-0">Active Users</p>
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="stat-card glass-card text-center p-4">
+                    <div class="stat-icon mb-3">
+                        <i class="fas fa-clipboard-list fa-3x text-white"></i>
                     </div>
+                    <h3 class="text-white fw-bold mb-1" id="totalQuizzes">50+</h3>
+                    <p class="text-white-50 mb-0">Quizzes Available</p>
                 </div>
-                <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="stat-card glass-card text-center p-4">
-                        <div class="stat-icon mb-3">
-                            <i class="fas fa-clipboard-list fa-3x text-white"></i>
-                        </div>
-                        <h3 class="text-white fw-bold mb-1" id="totalQuizzes">50+</h3>
-                        <p class="text-white-50 mb-0">Quizzes Available</p>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="stat-card glass-card text-center p-4">
+                    <div class="stat-icon mb-3">
+                        <i class="fas fa-trophy fa-3x text-white"></i>
                     </div>
+                    <h3 class="text-white fw-bold mb-1" id="totalAttempts">5000+</h3>
+                    <p class="text-white-50 mb-0">Quiz Attempts</p>
                 </div>
-                <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="stat-card glass-card text-center p-4">
-                        <div class="stat-icon mb-3">
-                            <i class="fas fa-trophy fa-3x text-white"></i>
-                        </div>
-                        <h3 class="text-white fw-bold mb-1" id="totalAttempts">5000+</h3>
-                        <p class="text-white-50 mb-0">Quiz Attempts</p>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="stat-card glass-card text-center p-4">
+                    <div class="stat-icon mb-3">
+                        <i class="fas fa-star fa-3x text-white"></i>
                     </div>
-                </div>
-                <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="stat-card glass-card text-center p-4">
-                        <div class="stat-icon mb-3">
-                            <i class="fas fa-star fa-3x text-white"></i>
-                        </div>
-                        <h3 class="text-white fw-bold mb-1">4.8/5</h3>
-                        <p class="text-white-50 mb-0">User Rating</p>
-                    </div>
+                    <h3 class="text-white fw-bold mb-1">4.8/5</h3>
+                    <p class="text-white-50 mb-0">User Rating</p>
                 </div>
             </div>
         </div>
-        <div class="hero-wave">
-            <svg viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg">
-                <path fill="#f9fafb" d="M0,64L48,69.3C96,75,192,85,288,80C384,75,480,53,576,48C672,43,768,53,864,58.7C960,64,1056,64,1152,58.7C1248,53,1344,43,1392,37.3L1440,32L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
-            </svg>
-        </div>
-    </header>
+    </div>
+    
+    <!-- Wave Shape Divider -->
+    <div class="hero-wave">
+        <svg viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#f9fafb" d="M0,64L48,69.3C96,75,192,85,288,80C384,75,480,53,576,48C672,43,768,53,864,58.7C960,64,1056,64,1152,58.7C1248,53,1344,43,1392,37.3L1440,32L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
+        </svg>
+    </div>
+</header>
 
+
+
+
+
+
+
+
+
+
+
+    
     <!-- Main Content -->
     <main class="container my-5">
         <!-- Registration Form Section -->
