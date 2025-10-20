@@ -36,13 +36,20 @@ document.getElementById('adminLoginForm').addEventListener('submit', function(e)
 });
 
 // Initialize Admin Panel
+
+// Initialize Admin Panel
 function initializeAdminPanel() {
+    setDefaultDate(); // Set today's date
     checkAPIConnection();
     updateDashboardStats();
     loadAllQuizzes();
     loadAllAttempts();
     setupAutoCalculation();
 }
+
+
+
+
 
 // Check API Status
 async function checkAPIConnection() {
