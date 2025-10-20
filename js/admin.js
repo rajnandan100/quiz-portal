@@ -511,3 +511,156 @@ function adminLogout() {
         }
     });
 }
+
+
+
+
+
+
+// Set default date to today on page load
+function setDefaultDate() {
+    const dateInput = document.getElementById('quizDateInput');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+        console.log('✅ Quiz date set to today:', today);
+    }
+}
+
+// Paste from clipboard
+async function pasteFromClipboard() {
+    try {
+        const text = await navigator.clipboard.readText();
+        document.getElementById('questionsJson').value = text;
+        
+        // Auto-validate after paste
+        try {
+            const questions = JSON.parse(text);
+            if (Array.isArray(questions)) {
+                document.getElementById('questionCount').textContent = questions.length;
+                const totalMinutes = Math.ceil(questions.reduce((sum, q) => sum + (q.timeAllocation || 60), 0) / 60);
+                document.getElementById('totalTime').textContent = totalMinutes + ' min';
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pasted!',
+                    text: `${questions.length} questions detected`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }
+        } catch (e) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Pasted',
+                text: 'Content pasted. Please validate JSON format.',
+                timer: 2000
+            });
+        }
+    } catch (err) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Failed',
+            text: 'Could not paste from clipboard. Please paste manually.',
+            timer: 2000
+        });
+    }
+}
+
+// Fill sample data for testing
+function fillSampleData() {
+    const sampleQuiz = [
+        {
+            question: "What is the capital of India?",
+            options: ["Mumbai", "New Delhi", "Kolkata", "Chennai"],
+            correctAnswer: 1,
+            explanation: "New Delhi is the capital of India since 1911. It was planned and built as the new capital after shifting from Kolkata.",
+            timeAllocation: 60
+        },
+        {
+            question: "Who is known as the Father of the Nation in India?",
+            options: ["Jawaharlal Nehru", "Mahatma Gandhi", "Sardar Patel", "Subhas Chandra Bose"],
+            correctAnswer: 1,
+            explanation: "Mahatma Gandhi is called the Father of the Nation for his role in India's independence movement using non-violent methods.",
+            timeAllocation: 60
+        },
+        {
+            question: "Which is the largest state in India by area?",
+            options: ["Maharashtra", "Rajasthan", "Madhya Pradesh", "Uttar Pradesh"],
+            correctAnswer: 1,
+            explanation: "Rajasthan is the largest state in India by area, covering 342,239 square kilometers.",
+            timeAllocation: 60
+        },
+        {
+            question: "In which year did India gain independence?",
+            options: ["1942", "1945", "1947", "1950"],
+            correctAnswer: 2,
+            explanation: "India gained independence from British rule on August 15, 1947.",
+            timeAllocation: 60
+        },
+        {
+            question: "What is the national animal of India?",
+            options: ["Lion", "Tiger", "Elephant", "Peacock"],
+            correctAnswer: 1,
+            explanation: "The Bengal Tiger is the national animal of India, symbolizing strength and agility.",
+            timeAllocation: 60
+        }
+    ];
+    
+    document.getElementById('questionsJson').value = JSON.stringify(sampleQuiz, null, 2);
+    document.getElementById('questionCount').textContent = sampleQuiz.length;
+    document.getElementById('totalTime').textContent = Math.ceil(sampleQuiz.length * 60 / 60) + ' min';
+    
+    Swal.fire({
+        icon: 'success',
+        title: 'Sample Loaded!',
+        text: '5 sample questions loaded for testing',
+        timer: 2000,
+        showConfirmButton: false
+    });
+}
+
+// Update the Copy Template function
+function copyTemplate() {
+    const template = `[
+  {
+    "question": "Your question here?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 1,
+    "explanation": "Detailed explanation of why Option B is correct",
+    "timeAllocation": 60
+  },
+  {
+    "question": "Another sample question?",
+    "options": ["Choice 1", "Choice 2", "Choice 3", "Choice 4"],
+    "correctAnswer": 0,
+    "explanation": "Explanation for Choice 1 being the correct answer",
+    "timeAllocation": 60
+  }
+]`;
+    
+    navigator.clipboard.writeText(template).then(() => {
+        Swal.fire({
+            icon: 'success',
+            title: 'Copied!',
+            html: 'Template copied to clipboard<br><small>Press Ctrl+V or click "Paste from Clipboard"</small>',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }).catch(() => {
+        // Fallback: show template in modal if clipboard fails
+        Swal.fire({
+            title: 'Copy Template',
+            html: `<textarea class="form-control font-monospace" rows="10" readonly>${template}</textarea>`,
+            confirmButtonText: 'Close',
+            width: '600px'
+        });
+    });
+}
+
+
+
+
+
+
+
