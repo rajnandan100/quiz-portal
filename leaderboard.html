@@ -558,47 +558,93 @@
       }
     }
 
-    function displayLeaderboard(data) {
-      const tbody = document.getElementById("leaderboardBody");
-      const session = JSON.parse(localStorage.getItem('userSession') || '{}');
-      const currentUserEmail = session.email || "";
 
-      if (data.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="6" class="text-center py-5">
-              <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
-              <p class="text-muted">No attempts for this quiz/period yet</p>
-            </td>
-          </tr>`;
-        return;
+
+
+
+
+
+    function displayLeaderboard(data) {
+  const tbody = document.getElementById("leaderboardBody");
+  const session = JSON.parse(localStorage.getItem('userSession') || '{}');
+  const currentUserEmail = session.email || "";
+
+  if (data.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center py-5">
+          <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+          <p class="text-muted">No attempts for this quiz/period yet</p>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map((entry, index) => {
+      const isCurrentUser = entry.email === currentUserEmail;
+      const rowClass = isCurrentUser ? "table-warning" : "";
+      let trophy = "";
+
+      if (index === 0) trophy = "🥇";
+      else if (index === 1) trophy = "🥈";
+      else if (index === 2) trophy = "🥉";
+
+      // FIX: Format time properly
+      let displayTime = entry.time || '00:00';
+      
+      // If time looks like a timestamp (contains 'T' or year 1899), convert it
+      if (displayTime.includes('T') || displayTime.includes('1899')) {
+        console.warn('⚠️ Invalid time format detected:', displayTime);
+        displayTime = '00:00'; // Default fallback
       }
 
-      tbody.innerHTML = data.map((entry, index) => {
-          const isCurrentUser = entry.email === currentUserEmail;
-          const rowClass = isCurrentUser ? "table-warning" : "";
-          let trophy = "";
+      // FIX: Format date properly
+      let displayDate = entry.date || '';
+      
+      try {
+        // If date is ISO format, convert to readable format
+        if (displayDate.includes('T')) {
+          displayDate = new Date(displayDate).toISOString().split('T')[0];
+        }
+        
+        // Format as Oct 19, 2025
+        const dateObj = new Date(displayDate);
+        if (!isNaN(dateObj.getTime())) {
+          displayDate = dateObj.toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          });
+        }
+      } catch (e) {
+        console.error('Date format error:', e);
+        displayDate = entry.date;
+      }
 
-          if (index === 0) trophy = "🥇";
-          else if (index === 1) trophy = "🥈";
-          else if (index === 2) trophy = "🥉";
+      return `
+        <tr class="${rowClass}">
+          <td class="fw-bold">${trophy} #${index + 1}</td>
+          <td>
+            <i class="fas fa-user-circle me-2"></i>${entry.userName || entry.name} 
+            ${isCurrentUser ? '<span class="badge bg-primary ms-2">You</span>' : ""}
+          </td>
+          <td><strong>${entry.score}/${entry.total || 30}</strong></td>
+          <td><span class="badge bg-success">${(entry.accuracy || 0).toFixed(2)}%</span></td>
+          <td><i class="fas fa-stopwatch me-1"></i>${displayTime}</td>
+          <td><i class="fas fa-calendar-day me-1"></i>${displayDate}</td>
+        </tr>
+      `;
+    }).join("");
+}
 
-          return `
-            <tr class="${rowClass}">
-              <td class="fw-bold">${trophy} #${index + 1}</td>
-              <td>
-                <i class="fas fa-user-circle me-2"></i>${entry.userName || entry.name} 
-                ${isCurrentUser ? '<span class="badge bg-primary ms-2">You</span>' : ""}
-              </td>
-              <td><strong>${entry.score}/${entry.total || 30}</strong></td>
-              <td><span class="badge bg-success">${(entry.accuracy || 0).toFixed(2)}%</span></td>
-              <td><i class="fas fa-stopwatch me-1"></i>${entry.time}</td>
-              <td><i class="fas fa-calendar-day me-1"></i>${entry.date}</td>
-            </tr>
-          `;
-        }).join("");
-    }
 
+
+
+
+
+
+
+    
     function resetFilters() {
       currentQuizId = 'all';
       currentPeriod = 'today';
