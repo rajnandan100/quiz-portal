@@ -621,6 +621,148 @@ window.addEventListener('DOMContentLoaded', async function() {
 });
 </script>
 
+
+
+
+
+
+
+<!-- Particles.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
+<!-- Initialize Bubble Particles -->
+<script>
+(function() {
+    'use strict';
+    
+    // Wait for DOM and particles.js to load
+    function initParticles() {
+        console.log('🔍 Initializing particles...');
+        
+        // Check if container exists
+        const container = document.getElementById('particles-js');
+        if (!container) {
+            console.error('❌ particles-js container not found!');
+            return;
+        }
+        
+        // Check if library loaded
+        if (typeof particlesJS === 'undefined') {
+            console.error('❌ particlesJS library not loaded!');
+            return;
+        }
+        
+        console.log('✅ Container and library found, starting particles...');
+        
+        // Initialize particles with bubble effect
+        particlesJS('particles-js', {
+            particles: {
+                number: {
+                    value: 80,
+                    density: {
+                        enable: true,
+                        value_area: 800
+                    }
+                },
+                color: {
+                    value: ['#ffffff', '#ffd700', '#ff69b4', '#87ceeb']
+                },
+                shape: {
+                    type: 'circle'
+                },
+                opacity: {
+                    value: 0.6,
+                    random: true,
+                    anim: {
+                        enable: true,
+                        speed: 1,
+                        opacity_min: 0.1,
+                        sync: false
+                    }
+                },
+                size: {
+                    value: 5,
+                    random: true,
+                    anim: {
+                        enable: true,
+                        speed: 4,
+                        size_min: 0.5,
+                        sync: false
+                    }
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: '#ffffff',
+                    opacity: 0.4,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: 'top',
+                    random: true,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false
+                }
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: 'bubble'
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: 'push'
+                    },
+                    resize: true
+                },
+                modes: {
+                    bubble: {
+                        distance: 200,
+                        size: 15,
+                        duration: 2,
+                        opacity: 0.8,
+                        speed: 3
+                    },
+                    push: {
+                        particles_nb: 4
+                    }
+                }
+            },
+            retina_detect: true
+        });
+        
+        console.log('✨ Particles initialized successfully!');
+    }
+    
+    // Run after page fully loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initParticles, 500);
+        });
+    } else {
+        setTimeout(initParticles, 500);
+    }
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
 </body>
 </html>
