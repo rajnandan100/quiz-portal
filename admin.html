@@ -3,86 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Quiz Creator</title>
+    <title>Admin Panel - Quiz Management System</title>
     
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
     
-    <style>
-        .admin-header {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            color: white;
-            padding: 20px 0;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
-        }
-        
-        .stats-card {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            border-left: 5px solid #dc2626;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            transition: transform 0.3s ease;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-        
-        .json-editor {
-            font-family: 'Courier New', monospace;
-            background: #1e293b;
-            color: #e2e8f0;
-            border: 2px solid #334155;
-            border-radius: 10px;
-            padding: 15px;
-            font-size: 0.95rem;
-        }
-        
-        .json-editor:focus {
-            outline: none;
-            border-color: #dc2626;
-            box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
-        }
-        
-        .help-card {
-            background: #fef3c7;
-            border-left: 5px solid #f59e0b;
-            padding: 15px;
-            border-radius: 10px;
-        }
-        
-        .info-card {
-            background: #dbeafe;
-            border-left: 5px solid #3b82f6;
-            padding: 15px;
-            border-radius: 10px;
-        }
-        
-        .recent-quiz-badge {
-            font-size: 0.75rem;
-            padding: 5px 10px;
-            border-radius: 20px;
-        }
-        
-        .action-btn {
-            transition: all 0.3s ease;
-        }
-        
-        .action-btn:hover {
-            transform: scale(1.05);
-        }
-    </style>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="bg-light">
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-danger sticky-top">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="index.html">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-danger sticky-top shadow">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="admin.html">
                 <i class="fas fa-shield-alt me-2"></i>Admin Control Panel
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -90,9 +32,21 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="index.html"><i class="fas fa-home me-1"></i>Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="leaderboard.html"><i class="fas fa-trophy me-1"></i>Leaderboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#" onclick="adminLogout()"><i class="fas fa-sign-out-alt me-1"></i>Logout</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="fas fa-home me-1"></i>User View
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="leaderboard.html">
+                            <i class="fas fa-trophy me-1"></i>Leaderboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="adminLogout()">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -103,16 +57,19 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title"><i class="fas fa-lock me-2"></i>Admin Authentication</h5>
+                    <h5 class="modal-title">
+                        <i class="fas fa-lock me-2"></i>Admin Authentication Required
+                    </h5>
                 </div>
                 <div class="modal-body">
                     <div class="text-center mb-4">
                         <i class="fas fa-user-shield fa-5x text-danger"></i>
-                        <h4 class="mt-3">Secure Admin Access</h4>
                     </div>
                     <form id="adminLoginForm">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Admin Password</label>
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-key me-2 text-danger"></i>Admin Password
+                            </label>
                             <input type="password" class="form-control form-control-lg" id="adminPassword" 
                                    placeholder="Enter admin password" required minlength="6" autocomplete="off">
                             <small class="text-muted">Default password: <code>admin123</code></small>
@@ -121,438 +78,396 @@
                             <i class="fas fa-sign-in-alt me-2"></i>Login to Admin Panel
                         </button>
                     </form>
-                    <div id="loginError" class="alert alert-danger mt-3" style="display:none;"></div>
+                    <div id="loginError" class="alert alert-danger mt-3" style="display:none;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="loginErrorText">Invalid password!</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Main Admin Content -->
-    <main class="container my-4" id="adminContent" style="display:none;">
+    <main class="container-fluid my-4" id="adminContent" style="display:none;">
         
-        <!-- Admin Header -->
-        <div class="admin-header">
-            <div class="container">
-                <h1 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Quiz Management Dashboard</h1>
-                <p class="mb-0 mt-2">Create and manage government exam preparation quizzes</p>
+        <!-- API Connection Status -->
+        <div class="alert alert-info alert-dismissible fade show" role="alert" id="apiStatusAlert">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>API Status:</strong> <span id="apiStatusText">Checking connection...</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Dashboard Statistics -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="card stat-card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="stat-icon bg-primary bg-opacity-10 rounded-circle mx-auto mb-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-clipboard-list fa-2x text-primary"></i>
+                        </div>
+                        <h2 class="fw-bold mb-1" id="totalQuizzesCount">0</h2>
+                        <p class="text-muted mb-0">Total Quizzes</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="card stat-card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="stat-icon bg-success bg-opacity-10 rounded-circle mx-auto mb-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-users fa-2x text-success"></i>
+                        </div>
+                        <h2 class="fw-bold mb-1" id="totalAttemptsCount">0</h2>
+                        <p class="text-muted mb-0">Total Attempts</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="card stat-card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="stat-icon bg-warning bg-opacity-10 rounded-circle mx-auto mb-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-calendar-day fa-2x text-warning"></i>
+                        </div>
+                        <h2 class="fw-bold mb-1" id="todayQuizzesCount">0</h2>
+                        <p class="text-muted mb-0">Today's Quizzes</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="card stat-card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="stat-icon bg-info bg-opacity-10 rounded-circle mx-auto mb-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-question-circle fa-2x text-info"></i>
+                        </div>
+                        <h2 class="fw-bold mb-1" id="totalQuestionsCount">0</h2>
+                        <p class="text-muted mb-0">Total Questions</p>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="stats-card text-center">
-                    <i class="fas fa-clipboard-list fa-3x text-danger mb-2"></i>
-                    <h3 id="totalQuizzes" class="mb-0">0</h3>
-                    <p class="text-muted mb-0">Total Quizzes</p>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="stats-card text-center">
-                    <i class="fas fa-users fa-3x text-primary mb-2"></i>
-                    <h3 id="totalAttempts" class="mb-0">0</h3>
-                    <p class="text-muted mb-0">Total Attempts</p>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="stats-card text-center">
-                    <i class="fas fa-calendar-day fa-3x text-success mb-2"></i>
-                    <h3 id="todayQuizzes" class="mb-0">0</h3>
-                    <p class="text-muted mb-0">Today's Quizzes</p>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="stats-card text-center">
-                    <i class="fas fa-question-circle fa-3x text-warning mb-2"></i>
-                    <h3 id="totalQuestions" class="mb-0">0</h3>
-                    <p class="text-muted mb-0">Total Questions</p>
-                </div>
-            </div>
-        </div>
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs nav-fill mb-4" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#createQuiz" type="button">
+                    <i class="fas fa-plus-circle me-2"></i>Create Quiz
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="manage-tab" data-bs-toggle="tab" data-bs-target="#manageQuizzes" type="button">
+                    <i class="fas fa-list me-2"></i>Manage Quizzes
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="attempts-tab" data-bs-toggle="tab" data-bs-target="#viewAttempts" type="button">
+                    <i class="fas fa-chart-line me-2"></i>View Attempts
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button">
+                    <i class="fas fa-analytics me-2"></i>Analytics
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button">
+                    <i class="fas fa-cog me-2"></i>Settings
+                </button>
+            </li>
+        </ul>
 
-        <div class="row">
-            <!-- Quiz Creation Form -->
-            <div class="col-lg-8">
-                <div class="card shadow-lg border-0 mb-4">
-                    <div class="card-header bg-danger text-white">
-                        <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Create New Quiz</h4>
-                    </div>
-                    <div class="card-body p-4">
-                        <form id="quizCreationForm">
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">
-                                        <i class="fas fa-calendar me-1"></i>Quiz Date *
-                                    </label>
-                                    <input type="date" class="form-control" id="quizDateInput" name="date" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">
-                                        <i class="fas fa-book me-1"></i>Subject *
-                                    </label>
-                                    <select class="form-select" id="subjectInput" name="subject" required>
-                                        <option value="">Select subject...</option>
-                                        <option value="General Knowledge">📚 General Knowledge</option>
-                                        <option value="English">📖 English</option>
-                                        <option value="Reasoning">🧩 Reasoning</option>
-                                        <option value="Mathematics">🔢 Mathematics</option>
-                                        <option value="General Studies">📝 General Studies</option>
-                                        <option value="Current Affairs">📰 Current Affairs</option>
-                                    </select>
-                                </div>
+        <!-- Tab Content -->
+        <div class="tab-content" id="adminTabContent">
+            
+            <!-- CREATE QUIZ TAB -->
+            <div class="tab-pane fade show active" id="createQuiz" role="tabpanel">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header bg-danger text-white py-3">
+                                <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Create New Quiz</h4>
                             </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">
-                                    <i class="fas fa-code me-1"></i>Questions JSON *
-                                </label>
-                                <textarea class="form-control json-editor" id="questionsJson" name="questionsJson" 
-                                          rows="12" required placeholder='Paste your questions in JSON format here...'></textarea>
-                                <div class="form-text">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Paste questions as JSON array. Use the template below for reference.
-                                </div>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-4">
-                                    <div class="info-card">
-                                        <strong><i class="fas fa-list-ol me-1"></i>Questions:</strong>
-                                        <h4 id="questionCount" class="text-primary mb-0">0</h4>
+                            <div class="card-body p-4">
+                                <form id="quizCreationForm">
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-calendar-alt text-danger me-2"></i>Quiz Date *
+                                            </label>
+                                            <input type="date" class="form-control" id="quizDateInput" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-book text-danger me-2"></i>Subject *
+                                            </label>
+                                            <select class="form-select" id="subjectInput" required>
+                                                <option value="">Select subject...</option>
+                                                <option value="General Knowledge">General Knowledge</option>
+                                                <option value="English">English</option>
+                                                <option value="Reasoning">Reasoning</option>
+                                                <option value="Mathematics">Mathematics</option>
+                                                <option value="General Studies">General Studies</option>
+                                                <option value="Current Affairs">Current Affairs</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="info-card">
-                                        <strong><i class="fas fa-clock me-1"></i>Duration:</strong>
-                                        <h4 id="totalTime" class="text-success mb-0">0 min</h4>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">
+                                            <i class="fas fa-code text-danger me-2"></i>Questions JSON *
+                                        </label>
+                                        <textarea class="form-control font-monospace" id="questionsJson" rows="12" required></textarea>
                                     </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <button type="button" class="btn btn-outline-primary w-100 h-100" onclick="validateJSON()">
-                                        <i class="fas fa-check-double me-1"></i>Validate JSON
-                                    </button>
-                                </div>
+
+                                    <div class="card bg-light border-0 mb-3">
+                                        <div class="card-body">
+                                            <div class="row text-center">
+                                                <div class="col-md-4">
+                                                    <i class="fas fa-list-ol fa-2x text-primary mb-2"></i>
+                                                    <h4 id="questionCount" class="text-primary mb-0">0</h4>
+                                                    <small>Questions</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <i class="fas fa-clock fa-2x text-success mb-2"></i>
+                                                    <h4 id="totalTime" class="text-success mb-0">0 min</h4>
+                                                    <small>Duration</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button type="button" class="btn btn-outline-primary" onclick="validateJSON()">
+                                                        <i class="fas fa-check me-1"></i>Validate
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button type="submit" class="btn btn-danger btn-lg px-4">
+                                            <i class="fas fa-cloud-upload-alt me-2"></i>Create Quiz
+                                        </button>
+                                        <button type="reset" class="btn btn-outline-secondary btn-lg px-4">
+                                            <i class="fas fa-redo me-2"></i>Reset
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info btn-lg px-4" onclick="copyTemplate()">
+                                            <i class="fas fa-copy me-2"></i>Copy Template
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-danger btn-lg px-5 action-btn" id="createQuizBtn">
-                                    <i class="fas fa-rocket me-2"></i>Create Quiz
-                                </button>
-                                <button type="reset" class="btn btn-outline-secondary btn-lg px-4 action-btn">
-                                    <i class="fas fa-redo me-2"></i>Reset
-                                </button>
-                                <button type="button" class="btn btn-outline-info btn-lg px-4 action-btn" onclick="loadSampleQuiz()">
-                                    <i class="fas fa-download me-2"></i>Load Sample
-                                </button>
+                    <div class="col-lg-4">
+                        <!-- Quick Guide Card -->
+                        <div class="card shadow-sm border-0 mb-3">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Quick Guide</h5>
                             </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+                            <div class="card-body">
+                                <ol class="mb-0 small">
+                                    <li class="mb-2">Select quiz date and subject</li>
+                                    <li class="mb-2">Paste questions in JSON format</li>
+                                    <li class="mb-2">Click "Validate" to check</li>
+                                    <li>Click "Create Quiz" to save</li>
+                                </ol>
+                            </div>
+                        </div>
 
-            <!-- Help & Instructions -->
-            <div class="col-lg-4">
-                <div class="card shadow border-0 mb-3">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Quick Guide</h5>
-                    </div>
-                    <div class="card-body">
-                        <ol class="mb-0">
-                            <li class="mb-2">Select quiz date and subject</li>
-                            <li class="mb-2">Paste questions in JSON format</li>
-                            <li class="mb-2">Click "Validate JSON" to verify</li>
-                            <li class="mb-2">Review question count and time</li>
-                            <li>Click "Create Quiz" to publish</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div class="card shadow border-0 mb-3">
-                    <div class="card-header bg-warning">
-                        <h5 class="mb-0"><i class="fas fa-code me-2"></i>JSON Template</h5>
-                    </div>
-                    <div class="card-body">
-                        <pre class="bg-dark text-light p-3 rounded small mb-3" style="font-size:10px; max-height:200px; overflow-y:auto;">[
+                        <!-- JSON Template Card -->
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0"><i class="fas fa-code me-2"></i>JSON Template</h5>
+                            </div>
+                            <div class="card-body">
+                                <pre class="bg-light p-3 rounded small" style="font-size:10px; max-height: 250px; overflow-y: auto;">[
   {
-    "question": "What is the capital of India?",
-    "options": [
-      "Mumbai",
-      "New Delhi",
-      "Kolkata",
-      "Chennai"
-    ],
+    "question": "Your question?",
+    "options": ["A", "B", "C", "D"],
     "correctAnswer": 1,
-    "explanation": "New Delhi is the capital of India",
+    "explanation": "Why this is correct",
     "timeAllocation": 60
   }
 ]</pre>
-                        <button class="btn btn-warning w-100 action-btn" onclick="copyTemplate()">
-                            <i class="fas fa-copy me-1"></i>Copy Template
-                        </button>
+                                <button class="btn btn-warning w-100 btn-sm" onclick="copyTemplate()">
+                                    <i class="fas fa-copy me-1"></i>Copy Template
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="help-card">
-                    <h6><i class="fas fa-lightbulb me-1"></i>Pro Tips</h6>
-                    <ul class="small mb-0">
-                        <li>correctAnswer is the index (0-3) of correct option</li>
-                        <li>timeAllocation is in seconds (default: 60)</li>
-                        <li>Always validate before creating quiz</li>
-                        <li>Add detailed explanations for better learning</li>
-                    </ul>
+            <!-- MANAGE QUIZZES TAB -->
+            <div class="tab-pane fade" id="manageQuizzes" role="tabpanel">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>All Quizzes</h5>
+                        <div>
+                            <button class="btn btn-sm btn-light" onclick="loadAllQuizzes()">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh
+                            </button>
+                            <button class="btn btn-sm btn-danger ms-2" onclick="deleteAllQuizzes()">
+                                <i class="fas fa-trash me-1"></i>Delete All
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="5%">#</th>
+                                        <th><i class="fas fa-calendar me-1"></i>Date</th>
+                                        <th><i class="fas fa-book me-1"></i>Subject</th>
+                                        <th><i class="fas fa-list-ol me-1"></i>Questions</th>
+                                        <th><i class="fas fa-clock me-1"></i>Duration</th>
+                                        <th><i class="fas fa-users me-1"></i>Attempts</th>
+                                        <th><i class="fas fa-cog me-1"></i>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="allQuizzesTable">
+                                    <tr><td colspan="7" class="text-center py-4">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Recent Quizzes -->
-        <div class="card shadow border-0">
-            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recently Created Quizzes</h5>
-                <button class="btn btn-sm btn-light" onclick="loadRecentQuizzes()">
-                    <i class="fas fa-sync-alt me-1"></i>Refresh
-                </button>
+            <!-- VIEW ATTEMPTS TAB -->
+            <div class="tab-pane fade" id="viewAttempts" role="tabpanel">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>All Quiz Attempts</h5>
+                        <div>
+                            <button class="btn btn-sm btn-light" onclick="loadAllAttempts()">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh
+                            </button>
+                            <button class="btn btn-sm btn-danger ms-2" onclick="deleteAllAttempts()">
+                                <i class="fas fa-trash me-1"></i>Clear All
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="5%">#</th>
+                                        <th><i class="fas fa-user me-1"></i>Name</th>
+                                        <th><i class="fas fa-envelope me-1"></i>Email</th>
+                                        <th><i class="fas fa-book me-1"></i>Quiz</th>
+                                        <th><i class="fas fa-award me-1"></i>Score</th>
+                                        <th><i class="fas fa-percentage me-1"></i>Accuracy</th>
+                                        <th><i class="fas fa-calendar me-1"></i>Date</th>
+                                        <th><i class="fas fa-cog me-1"></i>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="allAttemptsTable">
+                                    <tr><td colspan="8" class="text-center py-4">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead class="table-dark">
-                            <tr>
-                                <th><i class="fas fa-calendar me-1"></i>Date</th>
-                                <th><i class="fas fa-book me-1"></i>Subject</th>
-                                <th><i class="fas fa-question me-1"></i>Questions</th>
-                                <th><i class="fas fa-clock me-1"></i>Duration</th>
-                                <th><i class="fas fa-user-clock me-1"></i>Created</th>
-                                <th class="text-center"><i class="fas fa-cog me-1"></i>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recentQuizzesTable">
-                            <tr>
-                                <td colspan="6" class="text-center py-4">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
+
+            <!-- ANALYTICS TAB -->
+            <div class="tab-pane fade" id="analytics" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Subject-wise Distribution</h5>
+                            </div>
+                            <div class="card-body" id="subjectChart">
+                                <canvas id="subjectDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Performance Trends</h5>
+                            </div>
+                            <div class="card-body" id="performanceAnalytics">
+                                <div class="text-center py-5">
+                                    <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+                                    <p class="text-muted">Analytics will be displayed here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div class="tab-pane fade" id="settings" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0"><i class="fas fa-database me-2"></i>Data Management</h5>
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-primary w-100 mb-2" onclick="exportAllData()">
+                                    <i class="fas fa-download me-2"></i>Export All Data (JSON)
+                                </button>
+                                <button class="btn btn-success w-100 mb-2" onclick="syncWithGoogleSheets()">
+                                    <i class="fas fa-sync-alt me-2"></i>Sync with Google Sheets
+                                </button>
+                                <button class="btn btn-warning w-100 mb-2" onclick="backupData()">
+                                    <i class="fas fa-save me-2"></i>Create Backup
+                                </button>
+                                <hr>
+                                <button class="btn btn-danger w-100" onclick="clearAllData()">
+                                    <i class="fas fa-trash-alt me-2"></i>Clear All Local Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-key me-2"></i>Security Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="changePasswordForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">New Admin Password</label>
+                                        <input type="password" class="form-control" id="newPassword" minlength="6" required>
                                     </div>
-                                    <p class="mt-2 text-muted">Loading quizzes...</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                    <div class="mb-3">
+                                        <label class="form-label">Confirm Password</label>
+                                        <input type="password" class="form-control" id="confirmPassword" minlength="6" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-info w-100">
+                                        <i class="fas fa-lock me-2"></i>Change Password
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
         </div>
     </main>
 
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
-<script>
-// Admin Panel with Google Sheets Integration
-
-window.addEventListener('DOMContentLoaded', function() {
-    if (localStorage.getItem('quizAdmin') === 'authenticated') {
-        document.getElementById('adminContent').style.display = 'block';
-        loadRecentQuizzes();
-    } else {
-        var loginModal = new bootstrap.Modal(document.getElementById('adminLoginModal'));
-        loginModal.show();
-    }
-});
-
-document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const password = document.getElementById('adminPassword').value;
-    
-    if (password === 'admin123' || password.length >= 6) {
-        localStorage.setItem('quizAdmin', 'authenticated');
-        bootstrap.Modal.getInstance(document.getElementById('adminLoginModal')).hide();
-        document.getElementById('adminContent').style.display = 'block';
-        loadRecentQuizzes();
-        Swal.fire('Success', 'Admin login successful!', 'success');
-    } else {
-        document.getElementById('loginError').textContent = 'Invalid password!';
-        document.getElementById('loginError').style.display = 'block';
-    }
-});
-
-function adminLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-        localStorage.removeItem('quizAdmin');
-        window.location.href = 'index.html';
-    }
-}
-
-function validateJSON() {
-    const jsonText = document.getElementById('questionsJson').value;
-    try {
-        const questions = JSON.parse(jsonText);
-        if (!Array.isArray(questions)) throw new Error('Must be an array');
-        
-        questions.forEach((q, i) => {
-            if (!q.question || !q.options || !q.explanation) {
-                throw new Error(`Question ${i+1} is missing required fields`);
-            }
-            if (q.options.length !== 4) {
-                throw new Error(`Question ${i+1} must have exactly 4 options`);
-            }
-        });
-        
-        document.getElementById('questionCount').textContent = questions.length;
-        const totalMinutes = Math.ceil(questions.reduce((sum, q) => sum + (q.timeAllocation || 60), 0) / 60);
-        document.getElementById('totalTime').textContent = totalMinutes + ' minutes';
-        
-        Swal.fire('Valid!', `${questions.length} questions validated successfully`, 'success');
-    } catch (err) {
-        Swal.fire('Invalid JSON', err.message, 'error');
-    }
-}
-
-document.getElementById('questionsJson').addEventListener('input', function() {
-    try {
-        const questions = JSON.parse(this.value);
-        if (Array.isArray(questions)) {
-            document.getElementById('questionCount').textContent = questions.length;
-            const totalMinutes = Math.ceil(questions.reduce((sum, q) => sum + (q.timeAllocation || 60), 0) / 60);
-            document.getElementById('totalTime').textContent = totalMinutes + ' minutes';
-        }
-    } catch(e) {
-        // Ignore during typing
-    }
-});
-
-document.getElementById('quizCreationForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const date = document.getElementById('quizDateInput').value;
-    const subject = document.getElementById('subjectInput').value;
-    const questionsJson = document.getElementById('questionsJson').value;
-    
-    try {
-        const questions = JSON.parse(questionsJson);
-        if (!Array.isArray(questions) || questions.length === 0) {
-            throw new Error('Questions must be a non-empty array');
-        }
-        
-        const totalQuestions = questions.length;
-        const timeLimit = questions.reduce((sum, q) => sum + (q.timeAllocation || 60), 0);
-        
-        const quizId = 'quiz_' + Date.now();
-        const quizData = {
-            quizId,
-            date,
-            subject,
-            questions,
-            totalQuestions,
-            timeLimit,
-            createdAt: new Date().toISOString()
-        };
-        
-        // Store in localStorage
-        let quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
-        quizzes.push(quizData);
-        localStorage.setItem('quizzes', JSON.stringify(quizzes));
-        
-        // Send to Google Sheets API
-        try {
-            if (window.QuizAPI && typeof window.QuizAPI.createQuiz === 'function') {
-                Swal.fire({
-                    title: 'Creating Quiz...',
-                    text: 'Sending data to Google Sheets',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-
-                const apiResult = await window.QuizAPI.createQuiz(quizData);
-                
-                if (apiResult && apiResult.status === 'success') {
-                    Swal.fire('Success!', 'Quiz created and saved to Google Sheets in under 60 seconds!', 'success');
-                } else {
-                    throw new Error(apiResult.message || 'API returned error');
-                }
-            } else {
-                Swal.fire('Warning', 'Quiz created locally. Google Sheets API not connected.', 'warning');
-            }
-        } catch (apiError) {
-            console.error('Google Sheets API Error:', apiError);
-            Swal.fire('Partial Success', 'Quiz created locally but failed to sync with Google Sheets. Please check your API connection.', 'warning');
-        }
-        
-        document.getElementById('quizCreationForm').reset();
-        document.getElementById('questionCount').textContent = '0';
-        document.getElementById('totalTime').textContent = '0 minutes';
-        
-        loadRecentQuizzes();
-        
-    } catch (err) {
-        Swal.fire('Error', err.message, 'error');
-    }
-});
-
-function loadRecentQuizzes() {
-    const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
-    const tbody = document.getElementById('recentQuizzesTable');
-    
-    if (quizzes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No quizzes created yet</td></tr>';
-        return;
-    }
-    
-    tbody.innerHTML = quizzes.slice(-10).reverse().map(quiz => `
-        <tr>
-            <td>${quiz.date}</td>
-            <td><i class="fas fa-book me-1"></i>${quiz.subject}</td>
-            <td><span class="badge bg-primary">${quiz.totalQuestions}</span></td>
-            <td>${Math.ceil(quiz.timeLimit / 60)} min</td>
-            <td class="small">${new Date(quiz.createdAt).toLocaleString()}</td>
-            <td>
-                <button class="btn btn-sm btn-danger" onclick="deleteQuiz('${quiz.quizId}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function deleteQuiz(quizId) {
-    if (confirm('Are you sure you want to delete this quiz?')) {
-        let quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
-        quizzes = quizzes.filter(q => q.quizId !== quizId);
-        localStorage.setItem('quizzes', JSON.stringify(quizzes));
-        loadRecentQuizzes();
-        Swal.fire('Deleted!', 'Quiz has been deleted', 'success');
-    }
-}
-
-function copyTemplate() {
-    const template = `[
-  {
-    "question": "Your question here?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": 1,
-    "explanation": "Explanation here",
-    "timeAllocation": 60
-  }
- ]`;
-    navigator.clipboard.writeText(template).then(() => {
-        Swal.fire('Copied!', 'Template copied to clipboard', 'success');
-    });
-}
-</script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!-- Custom JS - THESE TWO SHOULD BE HERE -->
+    <!-- Custom JS -->
     <script src="js/utils.js"></script>
-    <script src="js/api.js"></script>      
-    
-    <!-- Admin Panel Script -->
-    <script>
-        // Admin code here...
-    </script>
+    <script src="js/api.js"></script>
 
-
-
-    
+    <!-- Admin Panel JavaScript -->
+    <script src="js/admin.js"></script>
 </body>
 </html>
