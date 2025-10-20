@@ -1,7 +1,8 @@
-// Main Application Logic with Email Uniqueness - app.js
+// Main Application Logic - app.js
 
 function initializeSampleData() {
-  if (!localStorage.getItem('quizzes')) {
+  // Only initialize if NO quizzes exist
+  if (!localStorage.getItem('quizzes') || JSON.parse(localStorage.getItem('quizzes')).length === 0) {
     const sampleQuizzes = [
       {
         quizId: 'quiz_sample_1',
@@ -23,6 +24,9 @@ function initializeSampleData() {
       },
     ];
     localStorage.setItem('quizzes', JSON.stringify(sampleQuizzes));
+    console.log('📝 Sample quizzes initialized');
+  } else {
+    console.log('✅ Existing quizzes found, skipping sample data');
   }
 }
 
@@ -63,6 +67,7 @@ window.addEventListener('DOMContentLoaded', function () {
   setupSubjectSelection();
   setupFormValidation();
   loadQuizDashboard();
+  setupFilters();
   updateStats();
 });
 
@@ -71,7 +76,7 @@ function loadQuizDates() {
   const dateSelect = document.getElementById('quizDate');
   if (!dateSelect) return;
 
-  const uniqueDates = [...new Set(quizzes.map((q) => q.date))].sort();
+  const uniqueDates = [...new Set(quizzes.map((q) => q.date))].sort().reverse();
   dateSelect.innerHTML = '<option value="">Choose date...</option>';
   uniqueDates.forEach((date) => {
     const option = document.createElement('option');
@@ -83,6 +88,8 @@ function loadQuizDates() {
     });
     dateSelect.appendChild(option);
   });
+  
+  console.log(`📅 Loaded ${uniqueDates.length} quiz dates`);
 }
 
 function setupSubjectSelection() {
@@ -166,15 +173,18 @@ function handleQuizStart(e) {
   if (alreadyAttempted) {
     Swal.fire({
       title: 'Already Attempted',
-      text: `You have already taken this quiz on ${alreadyAttempted.date}. Your score: ${alreadyAttempted.score}/${alreadyAttempted.total}`,
+      html: `You have already taken this quiz on <strong>${alreadyAttempted.date}</strong>.<br><br>` +
+            `Your score: <strong>${alreadyAttempted.score}/${alreadyAttempted.total}</strong> (${alreadyAttempted.accuracy.toFixed(2)}%)`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Retake Quiz',
-      cancelButtonText: 'View Results'
+      cancelButtonText: 'View Leaderboard',
+      confirmButtonColor: '#6366f1',
+      cancelButtonColor: '#f59e0b'
     }).then((result) => {
       if (result.isConfirmed) {
         startQuizSession(fullName, email, quiz);
-      } else {
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
         window.location.href = 'leaderboard.html';
       }
     });
@@ -201,62 +211,155 @@ function loadQuizDashboard() {
   const quizCardsContainer = document.getElementById('quizCards');
   if (!quizCardsContainer) return;
 
+  // Get all quizzes from localStorage
   const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
   const attempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
   const session = JSON.parse(localStorage.getItem('userSession') || '{}');
 
+  console.log(`📊 Loading ${quizzes.length} quizzes to dashboard`);
+
   if (quizzes.length === 0) {
-    quizCardsContainer.innerHTML = '<div class="col-12 text-center"><p class="text-muted">No quizzes available yet. Check back later!</p></div>';
+    quizCardsContainer.innerHTML = `
+      <div class="col-12 text-center py-5">
+        <i class="fas fa-inbox fa-5x text-muted mb-3"></i>
+        <h4 class="text-muted">No quizzes available yet</h4>
+        <p class="text-muted">Check back later or contact admin!</p>
+      </div>`;
+    updateQuizCount(0);
     return;
   }
 
-  document.getElementById('quizCount').textContent = quizzes.length;
+  // Update quiz count badge
+  updateQuizCount(quizzes.length);
 
-  quizCardsContainer.innerHTML = quizzes
-    .map((quiz) => {
+  // Sort quizzes by date (newest first)
+  const sortedQuizzes = quizzes.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // Display quizzes
+  displayQuizzes(sortedQuizzes, attempts, session);
+}
+
+function displayQuizzes(quizzes, attempts, session) {
+  const quizCardsContainer = document.getElementById('quizCards');
+  
+  quizCardsContainer.innerHTML = quizzes.map((quiz) => {
       const attempt = attempts.find((a) => a.quizId === quiz.quizId && a.email === session.email);
       const attempted = !!attempt;
+      
       const statusBadge = attempted
         ? '<span class="badge bg-success"><i class="fas fa-check me-1"></i>Completed</span>'
-        : '<span class="badge bg-secondary"><i class="fas fa-clock me-1"></i>Pending</span>';
-      const score = attempted ? `<p class="text-success fw-bold mb-2"><i class="fas fa-award me-1"></i>Score: ${attempt.score}/${quiz.totalQuestions}</p>` : '';
+        : '<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>';
+      
+      const score = attempted 
+        ? `<div class="alert alert-success py-2 mb-2">
+             <i class="fas fa-award me-1"></i><strong>Score: ${attempt.score}/${quiz.totalQuestions}</strong> 
+             (${attempt.accuracy.toFixed(1)}%)
+           </div>` 
+        : '';
+
+      const btnClass = attempted ? 'btn-outline-primary' : 'btn-primary';
+      const btnIcon = attempted ? 'fa-redo' : 'fa-play';
+      const btnText = attempted ? 'Retake Quiz' : 'Start Quiz';
 
       return `
-        <div class="col-lg-4 col-md-6">
+        <div class="col-lg-4 col-md-6 quiz-card-item" data-subject="${quiz.subject}" data-status="${attempted ? 'attempted' : 'pending'}">
           <div class="card quiz-card h-100 shadow-sm hover-lift">
-            <div class="card-body">
+            <div class="card-body d-flex flex-column">
               <div class="d-flex justify-content-between align-items-start mb-3">
                 <h5 class="card-title mb-0 fw-bold">
                   <i class="fas fa-book-reader me-2 text-primary"></i>${quiz.subject}
                 </h5>
                 ${statusBadge}
               </div>
+              
               <p class="text-muted mb-2">
-                <i class="fas fa-calendar-alt me-2"></i>${new Date(quiz.date).toLocaleDateString('en-IN')}
+                <i class="fas fa-calendar-alt me-2"></i>${new Date(quiz.date).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric'
+                })}
               </p>
+              
               <div class="d-flex justify-content-between text-muted small mb-3">
-                <span><i class="fas fa-question-circle me-1"></i>${quiz.totalQuestions} Questions</span>
-                <span><i class="fas fa-hourglass-half me-1"></i>${Math.ceil(quiz.timeLimit / 60)} min</span>
+                <span><i class="fas fa-question-circle me-1 text-info"></i>${quiz.totalQuestions} Questions</span>
+                <span><i class="fas fa-hourglass-half me-1 text-warning"></i>${Math.ceil(quiz.timeLimit / 60)} min</span>
               </div>
+              
               ${score}
-              <button class="btn ${attempted ? 'btn-outline-primary' : 'btn-primary'} w-100" onclick="startQuizFromCard('${quiz.quizId}')">
-                <i class="fas ${attempted ? 'fa-redo' : 'fa-play'} me-2"></i>${attempted ? 'Retake Quiz' : 'Start Quiz'}
+              
+              <button class="btn ${btnClass} w-100 mt-auto" onclick="startQuizFromCard('${quiz.quizId}')">
+                <i class="fas ${btnIcon} me-2"></i>${btnText}
               </button>
             </div>
           </div>
         </div>
       `;
-    })
-    .join('');
+    }).join('');
+}
+
+function setupFilters() {
+  const subjectFilter = document.getElementById('filterSubject');
+  const statusFilter = document.getElementById('filterStatus');
+  
+  if (subjectFilter) {
+    subjectFilter.addEventListener('change', applyFilters);
+  }
+  
+  if (statusFilter) {
+    statusFilter.addEventListener('change', applyFilters);
+  }
+  
+  console.log('✅ Filters setup complete');
+}
+
+function applyFilters() {
+  const subjectFilter = document.getElementById('filterSubject');
+  const statusFilter = document.getElementById('filterStatus');
+  
+  const selectedSubject = subjectFilter ? subjectFilter.value : '';
+  const selectedStatus = statusFilter ? statusFilter.value : '';
+  
+  const allCards = document.querySelectorAll('.quiz-card-item');
+  let visibleCount = 0;
+  
+  allCards.forEach(card => {
+    const cardSubject = card.dataset.subject;
+    const cardStatus = card.dataset.status;
+    
+    const subjectMatch = !selectedSubject || cardSubject === selectedSubject;
+    const statusMatch = !selectedStatus || cardStatus === selectedStatus;
+    
+    if (subjectMatch && statusMatch) {
+      card.style.display = '';
+      visibleCount++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+  
+  // Update count
+  updateQuizCount(visibleCount);
+  
+  console.log(`🔍 Filters applied: ${visibleCount} quizzes visible`);
+}
+
+function updateQuizCount(count) {
+  const countElement = document.getElementById('quizCount');
+  if (countElement) {
+    countElement.textContent = count;
+  }
 }
 
 function startQuizFromCard(quizId) {
   const userName = prompt('Enter your name:');
-  if (!userName) return;
+  if (!userName || userName.trim().length < 3) {
+    Swal.fire('Invalid Name', 'Please enter your full name (at least 3 characters)', 'error');
+    return;
+  }
   
   const email = prompt('Enter your email:');
   if (!email || !email.includes('@')) {
-    Swal.fire('Error', 'Please enter a valid email address', 'error');
+    Swal.fire('Invalid Email', 'Please enter a valid email address', 'error');
     return;
   }
 
@@ -275,28 +378,47 @@ function startQuizFromCard(quizId) {
   if (alreadyAttempted) {
     Swal.fire({
       title: 'Already Attempted',
-      text: `You have already taken this quiz. Your previous score: ${alreadyAttempted.score}/${alreadyAttempted.total}`,
+      html: `You have already taken this quiz.<br><br>Previous score: <strong>${alreadyAttempted.score}/${alreadyAttempted.total}</strong>`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Retake Anyway',
-      cancelButtonText: 'Cancel'
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#6366f1'
     }).then((result) => {
       if (result.isConfirmed) {
-        startQuizSession(userName, email, quiz);
+        startQuizSession(userName.trim(), email.trim(), quiz);
       }
     });
     return;
   }
 
-  startQuizSession(userName, email, quiz);
+  startQuizSession(userName.trim(), email.trim(), quiz);
 }
 
 function clearSession() {
-  if (confirm('Are you sure you want to logout?')) {
-    localStorage.removeItem('userSession');
-    localStorage.removeItem('currentQuizResults');
-    window.location.href = 'index.html';
-  }
+  Swal.fire({
+    title: 'Logout?',
+    text: 'Are you sure you want to logout?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Logout',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#ef4444'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      localStorage.removeItem('userSession');
+      localStorage.removeItem('currentQuizResults');
+      Swal.fire({
+        icon: 'success',
+        title: 'Logged Out',
+        text: 'You have been logged out successfully',
+        timer: 1500,
+        showConfirmButton: false
+      }).then(() => {
+        window.location.href = 'index.html';
+      });
+    }
+  });
 }
 
 function updateStats() {
@@ -312,5 +434,16 @@ function updateStats() {
   
   // Count unique users by email
   const uniqueEmails = new Set(attempts.map(a => a.email));
-  if (totalUsersEl) totalUsersEl.textContent = uniqueEmails.size + '+';
+  if (totalUsersEl) totalUsersEl.textContent = uniqueEmails.size || '1000+';
+  
+  console.log(`📈 Stats updated: ${quizzes.length} quizzes, ${attempts.length} attempts, ${uniqueEmails.size} users`);
 }
+
+// Refresh quiz dashboard when returning to page
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted || performance.navigation.type === 2) {
+    console.log('🔄 Page restored from cache, refreshing data...');
+    loadQuizDashboard();
+    updateStats();
+  }
+});
