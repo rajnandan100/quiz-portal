@@ -1,15 +1,37 @@
 // Google Sheets API Integration - api.js
 
 // 🔴 IMPORTANT: Replace this URL with your actual Google Apps Script Web App URL
-const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxULL-mg_1ReWo5RlOB3ux1oyJKo4ABMnyMaEQHssXm_SfO05SP-KjsMRMJzEIpxafp/exec';
+const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMyJN6l2GMr5asXXuEYi3LpY52jDnweNAz5yAtDoCQSzuhOjA7hfK-uoIhRMfzqopL/exec';
 
 // =========================================================
-// API FUNCTIONS
+// FETCH ALL QUIZZES FROM GOOGLE SHEETS (NEW)
 // =========================================================
+async function getQuizzesAPI() {
+  try {
+    console.log('📥 Fetching quizzes from Google Sheets...');
+    
+    const response = await fetch(`${GOOGLE_APPS_SCRIPT_URL}?action=getQuizzes`, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    
+    const result = await response.json();
+    console.log('📊 Quizzes fetch response:', result);
+    
+    if (result.status === 'success') {
+      return result.data.quizzes || [];
+    } else {
+      throw new Error(result.message || 'Failed to fetch quizzes');
+    }
+  } catch (err) {
+    console.error('❌ Get Quizzes API Error:', err);
+    return [];
+  }
+}
 
-/**
- * Create a new quiz in Google Sheets
- */
+// =========================================================
+// CREATE QUIZ
+// =========================================================
 async function createQuizAPI(quizData) {
   try {
     console.log('📤 Sending quiz to Google Sheets...', quizData);
@@ -46,12 +68,12 @@ async function createQuizAPI(quizData) {
   }
 }
 
-/**
- * Submit a quiz attempt to Google Sheets
- */
+// =========================================================
+// SUBMIT QUIZ ATTEMPT
+// =========================================================
 async function submitQuizAPI(attemptData) {
   try {
-    console.log('📤 Submitting quiz attempt to Google Sheets...', attemptData);
+    console.log('📤 Submitting quiz attempt to Google Sheets...');
 
     const formData = new URLSearchParams({
       action: 'submitQuiz',
@@ -88,70 +110,13 @@ async function submitQuizAPI(attemptData) {
   }
 }
 
-/**
- * Fetch all available quizzes from Google Sheets
- */
-async function getQuizzesAPI(filters = {}) {
-  try {
-    const params = new URLSearchParams({ 
-      action: 'getQuizzes', 
-      ...filters 
-    });
-    
-    const response = await fetch(`${GOOGLE_APPS_SCRIPT_URL}?${params.toString()}`, {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    
-    const result = await response.json();
-    
-    if (result.status === 'success') {
-      return result.data.quizzes || [];
-    } else {
-      throw new Error(result.message || 'Failed to fetch quizzes');
-    }
-  } catch (err) {
-    console.error('❌ Get Quizzes API Error:', err);
-    return [];
-  }
-}
-
-/**
- * Fetch leaderboard data from Google Sheets
- */
-async function getLeaderboardAPI(quizId = 'all') {
-  try {
-    const params = new URLSearchParams({ 
-      action: 'getLeaderboard', 
-      quizId 
-    });
-    
-    const response = await fetch(`${GOOGLE_APPS_SCRIPT_URL}?${params.toString()}`, {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    
-    const result = await response.json();
-    
-    if (result.status === 'success') {
-      return result.data.leaderboard || [];
-    } else {
-      throw new Error(result.message || 'Failed to fetch leaderboard');
-    }
-  } catch (err) {
-    console.error('❌ Get Leaderboard API Error:', err);
-    return [];
-  }
-}
-
-/**
- * Check if API is accessible
- */
+// =========================================================
+// CHECK API STATUS
+// =========================================================
 async function checkAPIStatus() {
   try {
     console.log('🔍 Checking API connection to:', GOOGLE_APPS_SCRIPT_URL);
     
-    // Check if URL is configured
     if (GOOGLE_APPS_SCRIPT_URL.includes('YOUR_DEPLOYMENT_ID_HERE')) {
       console.error('❌ Google Apps Script URL not configured!');
       return false;
@@ -176,17 +141,43 @@ async function checkAPIStatus() {
   }
 }
 
-/**
- * Sync local quizzes with Google Sheets
- */
+// =========================================================
+// SYNC QUIZZES FROM GOOGLE SHEETS (NEW)
+// =========================================================
 async function syncQuizzesFromGoogleSheets() {
   try {
-    const serverData = await getQuizzesAPI();
-    if (serverData && serverData.length > 0) {
-      localStorage.setItem('quizzes', JSON.stringify(serverData));
-      console.log('✅ Synced quizzes from Google Sheets');
+    console.log('🔄 Syncing quizzes from Google Sheets...');
+    const serverQuizzes = await getQuizzesAPI();
+    
+    if (serverQuizzes && serverQuizzes.length > 0) {
+      // Merge with local quizzes
+      const localQuizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
+      
+      // Create a map to avoid duplicates
+      const quizMap = new Map();
+      
+      // Add server quizzes first (they are authoritative)
+      serverQuizzes.forEach(quiz => {
+        quizMap.set(quiz.quizId, quiz);
+      });
+      
+      // Add local quizzes that don't exist on server
+      localQuizzes.forEach(quiz => {
+        if (!quizMap.has(quiz.quizId)) {
+          quizMap.set(quiz.quizId, quiz);
+        }
+      });
+      
+      // Save merged quizzes
+      const mergedQuizzes = Array.from(quizMap.values());
+      localStorage.setItem('quizzes', JSON.stringify(mergedQuizzes));
+      
+      console.log(`✅ Synced ${serverQuizzes.length} quizzes from server`);
+      console.log(`📊 Total quizzes after merge: ${mergedQuizzes.length}`);
       return true;
     }
+    
+    console.log('⚠️ No quizzes found on server');
     return false;
   } catch (e) {
     console.warn('⚠️ Could not sync from Google Sheets:', e.message);
@@ -197,12 +188,10 @@ async function syncQuizzesFromGoogleSheets() {
 // =========================================================
 // EXPORT API OBJECT
 // =========================================================
-
 window.QuizAPI = {
   createQuiz: createQuizAPI,
   submitQuiz: submitQuizAPI,
   getQuizzes: getQuizzesAPI,
-  getLeaderboard: getLeaderboardAPI,
   checkStatus: checkAPIStatus,
   sync: syncQuizzesFromGoogleSheets
 };
@@ -211,17 +200,16 @@ window.QuizAPI = {
 window.addEventListener('DOMContentLoaded', function() {
   console.log('🚀 QuizAPI Loaded');
   
-  // Check if URL is configured
   if (GOOGLE_APPS_SCRIPT_URL.includes('YOUR_DEPLOYMENT_ID_HERE')) {
     console.warn('⚠️ IMPORTANT: Please configure your Google Apps Script URL in api.js');
-    console.warn('📝 Edit js/api.js and replace YOUR_DEPLOYMENT_ID_HERE with your actual deployment ID');
   } else {
-    // Check connection status
     checkAPIStatus().then(isConnected => {
       if (isConnected) {
         console.log('✅ Google Sheets API is READY');
+        // Auto-sync quizzes
+        syncQuizzesFromGoogleSheets();
       } else {
-        console.warn('⚠️ Google Sheets API is not responding. Data will be saved locally only.');
+        console.warn('⚠️ Google Sheets API is not responding');
       }
     });
   }
