@@ -504,6 +504,24 @@ window.addEventListener('load', function() {
   setTimeout(syncQuizzesFromServer, 1000);
 });
 
+// Auto-sync quizzes when page loads
+window.addEventListener('load', async function() {
+  console.log('🔄 Checking for quiz updates...');
+  
+  // Wait a bit for API to initialize
+  setTimeout(async () => {
+    if (window.QuizAPI && typeof window.QuizAPI.sync === 'function') {
+      const synced = await window.QuizAPI.sync();
+      
+      if (synced) {
+        console.log('✅ Quizzes synced successfully');
+        // Reload dashboard with fresh data
+        loadQuizDashboard();
+        updateStats();
+      }
+    }
+  }, 1500);
+});
 
 
 
