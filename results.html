@@ -77,19 +77,24 @@
         </div>
 
         <!-- Ranking Message -->
-        <div class="card ranking-message-card text-center p-4 mb-5 shadow-sm rounded">
-            <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
-            <h3>Want to see your rank?</h3>
-            <p>Visit the leaderboard to compare your performance with others!</p>
-            <div class="d-flex justify-content-center gap-3 flex-wrap mt-3">
-                <a href="leaderboard.html" class="btn btn-warning btn-lg">
-                    <i class="fas fa-trophy me-2"></i>View Leaderboard
-                </a>
-                <button class="btn btn-outline-primary" id="reminderBtn">
-                    <i class="fas fa-bell me-2"></i>Set Reminder for 9 PM
-                </button>
-            </div>
-        </div>
+       <!-- Ranking Message -->
+<div class="card ranking-message-card text-center p-4 mb-5 shadow-sm rounded">
+    <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
+    <h3>Congratulations on completing the quiz!</h3>
+    <p>Check your ranking on the leaderboard</p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap mt-3">
+        <button class="btn btn-warning btn-lg" onclick="viewQuizLeaderboard()">
+            <i class="fas fa-trophy me-2"></i>View This Quiz Leaderboard
+        </button>
+        <a href="leaderboard.html?quizId=all" class="btn btn-outline-warning btn-lg">
+            <i class="fas fa-list me-2"></i>View All Leaderboards
+        </a>
+        <button class="btn btn-outline-primary" id="reminderBtn">
+            <i class="fas fa-bell me-2"></i>Set Reminder
+        </button>
+    </div>
+</div>
+
 
         <!-- Share Options -->
         <div class="card shadow-sm mb-4">
