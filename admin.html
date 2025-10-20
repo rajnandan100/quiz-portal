@@ -1,712 +1,194 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Quiz Creator</title>
+<script>
+// Admin Panel with Google Sheets Integration
+
+window.addEventListener('DOMContentLoaded', function() {
+    if (localStorage.getItem('quizAdmin') === 'authenticated') {
+        document.getElementById('adminContent').style.display = 'block';
+        loadRecentQuizzes();
+    } else {
+        var loginModal = new bootstrap.Modal(document.getElementById('adminLoginModal'));
+        loginModal.show();
+    }
+});
+
+document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const password = document.getElementById('adminPassword').value;
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    if (password === 'admin123' || password.length >= 6) {
+        localStorage.setItem('quizAdmin', 'authenticated');
+        bootstrap.Modal.getInstance(document.getElementById('adminLoginModal')).hide();
+        document.getElementById('adminContent').style.display = 'block';
+        loadRecentQuizzes();
+        Swal.fire('Success', 'Admin login successful!', 'success');
+    } else {
+        document.getElementById('loginError').textContent = 'Invalid password!';
+        document.getElementById('loginError').style.display = 'block';
+    }
+});
+
+function adminLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('quizAdmin');
+        window.location.href = 'index.html';
+    }
+}
+
+function validateJSON() {
+    const jsonText = document.getElementById('questionsJson').value;
+    try {
+        const questions = JSON.parse(jsonText);
+        if (!Array.isArray(questions)) throw new Error('Must be an array');
+        
+        questions.forEach((q, i) => {
+            if (!q.question || !q.options || !q.explanation) {
+                throw new Error(`Question ${i+1} is missing required fields`);
+            }
+            if (q.options.length !== 4) {
+                throw new Error(`Question ${i+1} must have exactly 4 options`);
+            }
+        });
+        
+        document.getElementById('questionCount').textContent = questions.length;
+        const totalMinutes = Math.ceil(questions.reduce((sum, q) => sum + (q.timeAllocation || 60), 0) / 60);
+        document.getElementById('totalTime').textContent = totalMinutes + ' minutes';
+        
+        Swal.fire('Valid!', `${questions.length} questions validated successfully`, 'success');
+    } catch (err) {
+        Swal.fire('Invalid JSON', err.message, 'error');
+    }
+}
+
+document.getElementById('questionsJson').addEventListener('input', function() {
+    try {
+        const questions = JSON.parse(this.value);
+        if (Array.isArray(questions)) {
+            document.getElementById('questionCount').textContent = questions.length;
+            const totalMinutes = Math.ceil(questions.reduce((sum, q) => sum + (q.timeAllocation || 60), 0) / 60);
+            document.getElementById('totalTime').textContent = totalMinutes + ' minutes';
+        }
+    } catch(e) {
+        // Ignore during typing
+    }
+});
+
+document.getElementById('quizCreationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
     
-    <style>
-        .admin-header {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            color: white;
-            padding: 20px 0;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+    const date = document.getElementById('quizDateInput').value;
+    const subject = document.getElementById('subjectInput').value;
+    const questionsJson = document.getElementById('questionsJson').value;
+    
+    try {
+        const questions = JSON.parse(questionsJson);
+        if (!Array.isArray(questions) || questions.length === 0) {
+            throw new Error('Questions must be a non-empty array');
         }
         
-        .stats-card {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            border-left: 5px solid #dc2626;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            transition: transform 0.3s ease;
+        const totalQuestions = questions.length;
+        const timeLimit = questions.reduce((sum, q) => sum + (q.timeAllocation || 60), 0);
+        
+        const quizId = 'quiz_' + Date.now();
+        const quizData = {
+            quizId,
+            date,
+            subject,
+            questions,
+            totalQuestions,
+            timeLimit,
+            createdAt: new Date().toISOString()
+        };
+        
+        // Store in localStorage
+        let quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
+        quizzes.push(quizData);
+        localStorage.setItem('quizzes', JSON.stringify(quizzes));
+        
+        // Send to Google Sheets API
+        try {
+            if (window.QuizAPI && typeof window.QuizAPI.createQuiz === 'function') {
+                Swal.fire({
+                    title: 'Creating Quiz...',
+                    text: 'Sending data to Google Sheets',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const apiResult = await window.QuizAPI.createQuiz(quizData);
+                
+                if (apiResult && apiResult.status === 'success') {
+                    Swal.fire('Success!', 'Quiz created and saved to Google Sheets in under 60 seconds!', 'success');
+                } else {
+                    throw new Error(apiResult.message || 'API returned error');
+                }
+            } else {
+                Swal.fire('Warning', 'Quiz created locally. Google Sheets API not connected.', 'warning');
+            }
+        } catch (apiError) {
+            console.error('Google Sheets API Error:', apiError);
+            Swal.fire('Partial Success', 'Quiz created locally but failed to sync with Google Sheets. Please check your API connection.', 'warning');
         }
         
-        .stats-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
+        document.getElementById('quizCreationForm').reset();
+        document.getElementById('questionCount').textContent = '0';
+        document.getElementById('totalTime').textContent = '0 minutes';
         
-        .json-editor {
-            font-family: 'Courier New', monospace;
-            background: #1e293b;
-            color: #e2e8f0;
-            border: 2px solid #334155;
-            border-radius: 10px;
-            padding: 15px;
-            font-size: 0.95rem;
-        }
+        loadRecentQuizzes();
         
-        .json-editor:focus {
-            outline: none;
-            border-color: #dc2626;
-            box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
-        }
-        
-        .help-card {
-            background: #fef3c7;
-            border-left: 5px solid #f59e0b;
-            padding: 15px;
-            border-radius: 10px;
-        }
-        
-        .info-card {
-            background: #dbeafe;
-            border-left: 5px solid #3b82f6;
-            padding: 15px;
-            border-radius: 10px;
-        }
-        
-        .recent-quiz-badge {
-            font-size: 0.75rem;
-            padding: 5px 10px;
-            border-radius: 20px;
-        }
-        
-        .action-btn {
-            transition: all 0.3s ease;
-        }
-        
-        .action-btn:hover {
-            transform: scale(1.05);
-        }
-    </style>
-</head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-danger sticky-top">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="index.html">
-                <i class="fas fa-shield-alt me-2"></i>Admin Control Panel
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="index.html"><i class="fas fa-home me-1"></i>Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="leaderboard.html"><i class="fas fa-trophy me-1"></i>Leaderboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#" onclick="adminLogout()"><i class="fas fa-sign-out-alt me-1"></i>Logout</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+    }
+});
 
-    <!-- Login Modal -->
-    <div class="modal fade" id="adminLoginModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title"><i class="fas fa-lock me-2"></i>Admin Authentication</h5>
-                </div>
-                <div class="modal-body">
-                    <div class="text-center mb-4">
-                        <i class="fas fa-user-shield fa-5x text-danger"></i>
-                        <h4 class="mt-3">Secure Admin Access</h4>
-                    </div>
-                    <form id="adminLoginForm">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Admin Password</label>
-                            <input type="password" class="form-control form-control-lg" id="adminPassword" 
-                                   placeholder="Enter admin password" required minlength="6" autocomplete="off">
-                            <small class="text-muted">Default password: <code>admin123</code></small>
-                        </div>
-                        <button type="submit" class="btn btn-danger w-100 btn-lg">
-                            <i class="fas fa-sign-in-alt me-2"></i>Login to Admin Panel
-                        </button>
-                    </form>
-                    <div id="loginError" class="alert alert-danger mt-3" style="display:none;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Admin Content -->
-    <main class="container my-4" id="adminContent" style="display:none;">
-        
-        <!-- Admin Header -->
-        <div class="admin-header">
-            <div class="container">
-                <h1 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Quiz Management Dashboard</h1>
-                <p class="mb-0 mt-2">Create and manage government exam preparation quizzes</p>
-            </div>
-        </div>
-
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="stats-card text-center">
-                    <i class="fas fa-clipboard-list fa-3x text-danger mb-2"></i>
-                    <h3 id="totalQuizzes" class="mb-0">0</h3>
-                    <p class="text-muted mb-0">Total Quizzes</p>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="stats-card text-center">
-                    <i class="fas fa-users fa-3x text-primary mb-2"></i>
-                    <h3 id="totalAttempts" class="mb-0">0</h3>
-                    <p class="text-muted mb-0">Total Attempts</p>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="stats-card text-center">
-                    <i class="fas fa-calendar-day fa-3x text-success mb-2"></i>
-                    <h3 id="todayQuizzes" class="mb-0">0</h3>
-                    <p class="text-muted mb-0">Today's Quizzes</p>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="stats-card text-center">
-                    <i class="fas fa-question-circle fa-3x text-warning mb-2"></i>
-                    <h3 id="totalQuestions" class="mb-0">0</h3>
-                    <p class="text-muted mb-0">Total Questions</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <!-- Quiz Creation Form -->
-            <div class="col-lg-8">
-                <div class="card shadow-lg border-0 mb-4">
-                    <div class="card-header bg-danger text-white">
-                        <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Create New Quiz</h4>
-                    </div>
-                    <div class="card-body p-4">
-                        <form id="quizCreationForm">
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">
-                                        <i class="fas fa-calendar me-1"></i>Quiz Date *
-                                    </label>
-                                    <input type="date" class="form-control" id="quizDateInput" name="date" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">
-                                        <i class="fas fa-book me-1"></i>Subject *
-                                    </label>
-                                    <select class="form-select" id="subjectInput" name="subject" required>
-                                        <option value="">Select subject...</option>
-                                        <option value="General Knowledge">📚 General Knowledge</option>
-                                        <option value="English">📖 English</option>
-                                        <option value="Reasoning">🧩 Reasoning</option>
-                                        <option value="Mathematics">🔢 Mathematics</option>
-                                        <option value="General Studies">📝 General Studies</option>
-                                        <option value="Current Affairs">📰 Current Affairs</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">
-                                    <i class="fas fa-code me-1"></i>Questions JSON *
-                                </label>
-                                <textarea class="form-control json-editor" id="questionsJson" name="questionsJson" 
-                                          rows="12" required placeholder='Paste your questions in JSON format here...'></textarea>
-                                <div class="form-text">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Paste questions as JSON array. Use the template below for reference.
-                                </div>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-4">
-                                    <div class="info-card">
-                                        <strong><i class="fas fa-list-ol me-1"></i>Questions:</strong>
-                                        <h4 id="questionCount" class="text-primary mb-0">0</h4>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="info-card">
-                                        <strong><i class="fas fa-clock me-1"></i>Duration:</strong>
-                                        <h4 id="totalTime" class="text-success mb-0">0 min</h4>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <button type="button" class="btn btn-outline-primary w-100 h-100" onclick="validateJSON()">
-                                        <i class="fas fa-check-double me-1"></i>Validate JSON
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-danger btn-lg px-5 action-btn" id="createQuizBtn">
-                                    <i class="fas fa-rocket me-2"></i>Create Quiz
-                                </button>
-                                <button type="reset" class="btn btn-outline-secondary btn-lg px-4 action-btn">
-                                    <i class="fas fa-redo me-2"></i>Reset
-                                </button>
-                                <button type="button" class="btn btn-outline-info btn-lg px-4 action-btn" onclick="loadSampleQuiz()">
-                                    <i class="fas fa-download me-2"></i>Load Sample
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Help & Instructions -->
-            <div class="col-lg-4">
-                <div class="card shadow border-0 mb-3">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Quick Guide</h5>
-                    </div>
-                    <div class="card-body">
-                        <ol class="mb-0">
-                            <li class="mb-2">Select quiz date and subject</li>
-                            <li class="mb-2">Paste questions in JSON format</li>
-                            <li class="mb-2">Click "Validate JSON" to verify</li>
-                            <li class="mb-2">Review question count and time</li>
-                            <li>Click "Create Quiz" to publish</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div class="card shadow border-0 mb-3">
-                    <div class="card-header bg-warning">
-                        <h5 class="mb-0"><i class="fas fa-code me-2"></i>JSON Template</h5>
-                    </div>
-                    <div class="card-body">
-                        <pre class="bg-dark text-light p-3 rounded small mb-3" style="font-size:10px; max-height:200px; overflow-y:auto;">[
-  {
-    "question": "What is the capital of India?",
-    "options": [
-      "Mumbai",
-      "New Delhi",
-      "Kolkata",
-      "Chennai"
-    ],
-    "correctAnswer": 1,
-    "explanation": "New Delhi is the capital of India",
-    "timeAllocation": 60
-  }
-]</pre>
-                        <button class="btn btn-warning w-100 action-btn" onclick="copyTemplate()">
-                            <i class="fas fa-copy me-1"></i>Copy Template
-                        </button>
-                    </div>
-                </div>
-
-                <div class="help-card">
-                    <h6><i class="fas fa-lightbulb me-1"></i>Pro Tips</h6>
-                    <ul class="small mb-0">
-                        <li>correctAnswer is the index (0-3) of correct option</li>
-                        <li>timeAllocation is in seconds (default: 60)</li>
-                        <li>Always validate before creating quiz</li>
-                        <li>Add detailed explanations for better learning</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Quizzes -->
-        <div class="card shadow border-0">
-            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recently Created Quizzes</h5>
-                <button class="btn btn-sm btn-light" onclick="loadRecentQuizzes()">
-                    <i class="fas fa-sync-alt me-1"></i>Refresh
+function loadRecentQuizzes() {
+    const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
+    const tbody = document.getElementById('recentQuizzesTable');
+    
+    if (quizzes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No quizzes created yet</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = quizzes.slice(-10).reverse().map(quiz => `
+        <tr>
+            <td>${quiz.date}</td>
+            <td><i class="fas fa-book me-1"></i>${quiz.subject}</td>
+            <td><span class="badge bg-primary">${quiz.totalQuestions}</span></td>
+            <td>${Math.ceil(quiz.timeLimit / 60)} min</td>
+            <td class="small">${new Date(quiz.createdAt).toLocaleString()}</td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="deleteQuiz('${quiz.quizId}')">
+                    <i class="fas fa-trash"></i>
                 </button>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead class="table-dark">
-                            <tr>
-                                <th><i class="fas fa-calendar me-1"></i>Date</th>
-                                <th><i class="fas fa-book me-1"></i>Subject</th>
-                                <th><i class="fas fa-question me-1"></i>Questions</th>
-                                <th><i class="fas fa-clock me-1"></i>Duration</th>
-                                <th><i class="fas fa-user-clock me-1"></i>Created</th>
-                                <th class="text-center"><i class="fas fa-cog me-1"></i>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recentQuizzesTable">
-                            <tr>
-                                <td colspan="6" class="text-center py-4">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                    <p class="mt-2 text-muted">Loading quizzes...</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </main>
+            </td>
+        </tr>
+    `).join('');
+}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <script>
-        // ==============================================
-        // ADMIN AUTHENTICATION
-        // ==============================================
-        window.addEventListener('DOMContentLoaded', function() {
-            if (localStorage.getItem('quizAdmin') === 'authenticated') {
-                document.getElementById('adminContent').style.display = 'block';
-                loadRecentQuizzes();
-                updateStatistics();
-            } else {
-                var loginModal = new bootstrap.Modal(document.getElementById('adminLoginModal'));
-                loginModal.show();
-            }
-        });
+function deleteQuiz(quizId) {
+    if (confirm('Are you sure you want to delete this quiz?')) {
+        let quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
+        quizzes = quizzes.filter(q => q.quizId !== quizId);
+        localStorage.setItem('quizzes', JSON.stringify(quizzes));
+        loadRecentQuizzes();
+        Swal.fire('Deleted!', 'Quiz has been deleted', 'success');
+    }
+}
 
-        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const password = document.getElementById('adminPassword').value;
-            
-            if (password === 'admin123' || password.length >= 6) {
-                localStorage.setItem('quizAdmin', 'authenticated');
-                bootstrap.Modal.getInstance(document.getElementById('adminLoginModal')).hide();
-                document.getElementById('adminContent').style.display = 'block';
-                loadRecentQuizzes();
-                updateStatistics();
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Welcome Admin!',
-                    text: 'Successfully logged into admin panel',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            } else {
-                document.getElementById('loginError').textContent = 'Invalid password! Minimum 6 characters required.';
-                document.getElementById('loginError').style.display = 'block';
-            }
-        });
-
-        function adminLogout() {
-            Swal.fire({
-                title: 'Logout Confirmation',
-                text: 'Are you sure you want to logout?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Yes, Logout'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    localStorage.removeItem('quizAdmin');
-                    window.location.href = 'index.html';
-                }
-            });
-        }
-
-        // ==============================================
-        // JSON VALIDATION
-        // ==============================================
-        function validateJSON() {
-            const jsonText = document.getElementById('questionsJson').value.trim();
-            
-            if (!jsonText) {
-                Swal.fire('Empty!', 'Please paste questions JSON first', 'warning');
-                return;
-            }
-            
-            try {
-                const questions = JSON.parse(jsonText);
-                if (!Array.isArray(questions)) {
-                    throw new Error('JSON must be an array of questions');
-                }
-                
-                if (questions.length === 0) {
-                    throw new Error('Array cannot be empty');
-                }
-                
-                questions.forEach((q, i) => {
-                    if (!q.question || typeof q.question !== 'string') {
-                        throw new Error(`Question ${i+1}: Missing or invalid 'question' field`);
-                    }
-                    if (!Array.isArray(q.options) || q.options.length !== 4) {
-                        throw new Error(`Question ${i+1}: Must have exactly 4 options`);
-                    }
-                    if (typeof q.correctAnswer !== 'number' || q.correctAnswer < 0 || q.correctAnswer > 3) {
-                        throw new Error(`Question ${i+1}: correctAnswer must be 0, 1, 2, or 3`);
-                    }
-                    if (!q.explanation || typeof q.explanation !== 'string') {
-                        throw new Error(`Question ${i+1}: Missing or invalid 'explanation' field`);
-                    }
-                });
-                
-                document.getElementById('questionCount').textContent = questions.length;
-                const totalMinutes = Math.ceil(questions.reduce((sum, q) => sum + (q.timeAllocation || 60), 0) / 60);
-                document.getElementById('totalTime').textContent = totalMinutes + ' min';
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Valid JSON!',
-                    html: `<strong>${questions.length}</strong> questions validated successfully<br><small>Total Duration: ${totalMinutes} minutes</small>`,
-                    confirmButtonColor: '#10b981'
-                });
-            } catch (err) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid JSON',
-                    text: err.message,
-                    confirmButtonColor: '#dc2626'
-                });
-            }
-        }
-
-        // Auto-update on typing
-        document.getElementById('questionsJson').addEventListener('input', function() {
-            try {
-                const questions = JSON.parse(this.value);
-                if (Array.isArray(questions) && questions.length > 0) {
-                    document.getElementById('questionCount').textContent = questions.length;
-                    const totalMinutes = Math.ceil(questions.reduce((sum, q) => sum + (q.timeAllocation || 60), 0) / 60);
-                    document.getElementById('totalTime').textContent = totalMinutes + ' min';
-                }
-            } catch(e) {
-                // Ignore parsing errors during typing
-            }
-        });
-
-        // ==============================================
-        // QUIZ CREATION
-        // ==============================================
-        document.getElementById('quizCreationForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const date = document.getElementById('quizDateInput').value;
-            const subject = document.getElementById('subjectInput').value;
-            const questionsJson = document.getElementById('questionsJson').value.trim();
-            
-            if (!date || !subject || !questionsJson) {
-                Swal.fire('Missing Fields', 'Please fill all required fields', 'warning');
-                return;
-            }
-            
-            try {
-                const questions = JSON.parse(questionsJson);
-                if (!Array.isArray(questions) || questions.length === 0) {
-                    throw new Error('Questions must be a non-empty array');
-                }
-                
-                // Validate all questions
-                questions.forEach((q, i) => {
-                    if (!q.question || !q.options || q.options.length !== 4 || typeof q.correctAnswer !== 'number' || !q.explanation) {
-                        throw new Error(`Question ${i+1} has invalid format`);
-                    }
-                });
-                
-                const totalQuestions = questions.length;
-                const timeLimit = questions.reduce((sum, q) => sum + (q.timeAllocation || 60), 0);
-                
-                const quizId = 'quiz_' + Date.now();
-                const quizData = {
-                    quizId,
-                    date,
-                    subject,
-                    questions,
-                    totalQuestions,
-                    timeLimit,
-                    createdAt: new Date().toISOString()
-                };
-                
-                // Store in localStorage
-                let quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
-                quizzes.push(quizData);
-                localStorage.setItem('quizzes', JSON.stringify(quizzes));
-                
-                // Success
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Quiz Created!',
-                    html: `<strong>${totalQuestions}</strong> questions quiz created in under 60 seconds!<br><small>Subject: ${subject} | Date: ${date}</small>`,
-                    timer: 3000,
-                    showConfirmButton: false
-                });
-                
-                // Reset form
-                document.getElementById('quizCreationForm').reset();
-                document.getElementById('questionCount').textContent = '0';
-                document.getElementById('totalTime').textContent = '0 min';
-                
-                // Reload quizzes
-                loadRecentQuizzes();
-                updateStatistics();
-                
-            } catch (err) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Creation Failed',
-                    text: err.message,
-                    confirmButtonColor: '#dc2626'
-                });
-            }
-        });
-
-        // ==============================================
-        // LOAD RECENT QUIZZES
-        // ==============================================
-        function loadRecentQuizzes() {
-            const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
-            const tbody = document.getElementById('recentQuizzesTable');
-            
-            if (quizzes.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
-                            <i class="fas fa-inbox fa-3x mb-2"></i>
-                            <p class="mb-0">No quizzes created yet. Create your first quiz above!</p>
-                        </td>
-                    </tr>`;
-                return;
-            }
-            
-            tbody.innerHTML = quizzes.slice(-15).reverse().map((quiz, index) => `
-                <tr>
-                    <td><i class="fas fa-calendar-alt me-1 text-primary"></i>${quiz.date}</td>
-                    <td><span class="badge bg-primary">${quiz.subject}</span></td>
-                    <td><span class="recent-quiz-badge bg-success">${quiz.totalQuestions}</span></td>
-                    <td><span class="recent-quiz-badge bg-info">${Math.ceil(quiz.timeLimit / 60)} min</span></td>
-                    <td class="small text-muted">${new Date(quiz.createdAt).toLocaleString('en-IN')}</td>
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-outline-info me-1" onclick="viewQuiz('${quiz.quizId}')" title="View">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteQuiz('${quiz.quizId}')" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // ==============================================
-        // DELETE QUIZ
-        // ==============================================
-        function deleteQuiz(quizId) {
-            Swal.fire({
-                title: 'Delete Quiz?',
-                text: 'This action cannot be undone!',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Yes, Delete'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    let quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
-                    quizzes = quizzes.filter(q => q.quizId !== quizId);
-                    localStorage.setItem('quizzes', JSON.stringify(quizzes));
-                    loadRecentQuizzes();
-                    updateStatistics();
-                    Swal.fire('Deleted!', 'Quiz has been removed', 'success');
-                }
-            });
-        }
-
-        // ==============================================
-        // VIEW QUIZ DETAILS
-        // ==============================================
-        function viewQuiz(quizId) {
-            const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
-            const quiz = quizzes.find(q => q.quizId === quizId);
-            
-            if (quiz) {
-                Swal.fire({
-                    title: quiz.subject,
-                    html: `
-                        <div class="text-start">
-                            <p><strong>Date:</strong> ${quiz.date}</p>
-                            <p><strong>Questions:</strong> ${quiz.totalQuestions}</p>
-                            <p><strong>Duration:</strong> ${Math.ceil(quiz.timeLimit / 60)} minutes</p>
-                            <p><strong>Created:</strong> ${new Date(quiz.createdAt).toLocaleString('en-IN')}</p>
-                        </div>
-                    `,
-                    icon: 'info',
-                    confirmButtonColor: '#6366f1'
-                });
-            }
-        }
-
-        // ==============================================
-        // COPY TEMPLATE
-        // ==============================================
-        function copyTemplate() {
-            const template = `[
+function copyTemplate() {
+    const template = `[
   {
-    "question": "What is the capital of India?",
-    "options": ["Mumbai", "New Delhi", "Kolkata", "Chennai"],
+    "question": "Your question here?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
     "correctAnswer": 1,
-    "explanation": "New Delhi is the capital of India since 1911",
-    "timeAllocation": 60
-  },
-  {
-    "question": "Who wrote Romeo and Juliet?",
-    "options": ["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"],
-    "correctAnswer": 1,
-    "explanation": "William Shakespeare wrote Romeo and Juliet around 1594-1596",
+    "explanation": "Explanation here",
     "timeAllocation": 60
   }
 ]`;
-            navigator.clipboard.writeText(template).then(() => {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Copied!',
-                    text: 'Template copied to clipboard',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-            });
-        }
-
-        // ==============================================
-        // LOAD SAMPLE QUIZ
-        // ==============================================
-        function loadSampleQuiz() {
-            const sample = `[
-  {
-    "question": "What is the capital of India?",
-    "options": ["Mumbai", "New Delhi", "Kolkata", "Chennai"],
-    "correctAnswer": 1,
-    "explanation": "New Delhi is the capital of India",
-    "timeAllocation": 60
-  },
-  {
-    "question": "Which planet is known as the Red Planet?",
-    "options": ["Venus", "Mars", "Jupiter", "Saturn"],
-    "correctAnswer": 1,
-    "explanation": "Mars is called the Red Planet due to iron oxide on its surface",
-    "timeAllocation": 60
-  }
-]`;
-            document.getElementById('questionsJson').value = sample;
-            document.getElementById('questionCount').textContent = '2';
-            document.getElementById('totalTime').textContent = '2 min';
-            Swal.fire({
-                icon: 'info',
-                title: 'Sample Loaded',
-                text: 'Sample quiz with 2 questions loaded',
-                timer: 1500,
-                showConfirmButton: false
-            });
-        }
-
-        // ==============================================
-        // UPDATE STATISTICS
-        // ==============================================
-        function updateStatistics() {
-            const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
-            const attempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
-            const today = new Date().toISOString().split('T')[0];
-            
-            document.getElementById('totalQuizzes').textContent = quizzes.length;
-            document.getElementById('totalAttempts').textContent = attempts.length;
-            document.getElementById('todayQuizzes').textContent = quizzes.filter(q => q.date === today).length;
-            
-            const totalQuestions = quizzes.reduce((sum, q) => sum + q.totalQuestions, 0);
-            document.getElementById('totalQuestions').textContent = totalQuestions;
-        }
-    </script>
-</body>
-</html>
+    navigator.clipboard.writeText(template).then(() => {
+        Swal.fire('Copied!', 'Template copied to clipboard', 'success');
+    });
+}
+</script>
