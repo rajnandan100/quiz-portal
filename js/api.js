@@ -1,7 +1,7 @@
 // Google Sheets API Integration - api.js
 
 // 🔴 IMPORTANT: Replace this URL with your actual Google Apps Script Web App URL
-const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID_HERE/exec';
+const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxULL-mg_1ReWo5RlOB3ux1oyJKo4ABMnyMaEQHssXm_SfO05SP-KjsMRMJzEIpxafp/exec';
 
 // =========================================================
 // API FUNCTIONS
