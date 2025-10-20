@@ -220,19 +220,75 @@
 
 
 
+
+
+
+
 <script>
     let currentPeriod = "today";
     let currentQuizId = "all";
     let allLeaderboardData = [];
 
-    window.addEventListener("DOMContentLoaded", function () {
+    window.addEventListener("DOMContentLoaded", async function () {
       loadQuizSelector();
       checkForSpecificQuiz();
+      
+      // Sync attempts from Google Sheets first
+      await syncAttemptsFromServer();
+      
+      // Then load leaderboard
       loadLeaderboard();
+      
       setupEventListeners();
+      
       // Auto-refresh every 30 seconds
       setInterval(loadLeaderboard, 30000);
     });
+
+    // Sync attempts from Google Sheets on page load
+    async function syncAttemptsFromServer() {
+      try {
+        if (window.QuizAPI && typeof window.QuizAPI.getLeaderboard === 'function') {
+          console.log('🔄 Syncing attempts from Google Sheets...');
+          
+          const serverAttempts = await window.QuizAPI.getLeaderboard('all');
+          
+          if (serverAttempts && serverAttempts.length > 0) {
+            // Merge with local attempts
+            const localAttempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
+            
+            // Create map to avoid duplicates
+            const attemptMap = new Map();
+            
+            // Add server attempts first (they are authoritative)
+            serverAttempts.forEach(attempt => {
+              const key = `${attempt.email}_${attempt.quizId}_${attempt.date}`;
+              attemptMap.set(key, attempt);
+            });
+            
+            // Add local attempts that don't exist on server
+            localAttempts.forEach(attempt => {
+              const key = `${attempt.email}_${attempt.quizId}_${attempt.date}`;
+              if (!attemptMap.has(key)) {
+                attemptMap.set(key, attempt);
+              }
+            });
+            
+            // Save merged attempts
+            const mergedAttempts = Array.from(attemptMap.values());
+            localStorage.setItem('quizAttempts', JSON.stringify(mergedAttempts));
+            
+            console.log(`✅ Synced ${serverAttempts.length} attempts from server`);
+            console.log(`📊 Total attempts after merge: ${mergedAttempts.length}`);
+            return true;
+          }
+        }
+        return false;
+      } catch (error) {
+        console.warn('⚠️ Could not sync attempts:', error.message);
+        return false;
+      }
+    }
 
     // Check if redirected from results page with specific quiz
     function checkForSpecificQuiz() {
@@ -305,19 +361,57 @@
       });
     }
 
-    function loadLeaderboard() {
-      const attempts = JSON.parse(localStorage.getItem("quizAttempts") || "[]");
+    async function loadLeaderboard() {
       const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
       
       console.log(`🔍 Loading leaderboard for: ${currentQuizId}, period: ${currentPeriod}`);
       
-      // NO SAMPLE DATA - Show empty state if no attempts
+      // Show loading state
+      const tbody = document.getElementById("leaderboardBody");
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-5">
+            <div class="spinner-border text-primary mb-3"></div>
+            <p>Loading leaderboard data...</p>
+          </td>
+        </tr>
+      `;
+      
+      // STEP 1: Fetch attempts from Google Sheets first
+      let attempts = [];
+      try {
+        if (window.QuizAPI && typeof window.QuizAPI.getLeaderboard === 'function') {
+          console.log('📥 Fetching leaderboard from Google Sheets...');
+          
+          const serverData = await window.QuizAPI.getLeaderboard(currentQuizId);
+          
+          if (serverData && serverData.length > 0) {
+            console.log(`✅ Fetched ${serverData.length} attempts from Google Sheets`);
+            attempts = serverData;
+            
+            // Save to localStorage for offline access
+            localStorage.setItem('quizAttempts', JSON.stringify(serverData));
+          } else {
+            console.log('⚠️ No attempts found on Google Sheets');
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not fetch from Google Sheets:', error.message);
+      }
+      
+      // STEP 2: If no data from server, use localStorage
+      if (attempts.length === 0) {
+        console.log('📂 Loading attempts from localStorage...');
+        attempts = JSON.parse(localStorage.getItem("quizAttempts") || "[]");
+      }
+      
+      // STEP 3: Show empty state if still no data
       if (attempts.length === 0) {
         showEmptyState();
         return;
       }
 
-      // Filter by selected quiz
+      // STEP 4: Filter by selected quiz
       let filteredAttempts = attempts;
       if (currentQuizId !== 'all') {
         filteredAttempts = attempts.filter(a => a.quizId === currentQuizId);
@@ -326,13 +420,13 @@
         hideQuizInfo();
       }
       
-      // Filter by time period
+      // STEP 5: Filter by time period
       filteredAttempts = filterByPeriod(filteredAttempts, currentPeriod);
       
-      // Remove duplicates (keep best attempt per user per quiz)
+      // STEP 6: Remove duplicates (keep best attempt per user per quiz)
       filteredAttempts = removeDuplicates(filteredAttempts);
       
-      // Sort by score descending, then by time ascending
+      // STEP 7: Sort by score descending, then by time ascending
       filteredAttempts.sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return timeToSeconds(a.time) - timeToSeconds(b.time);
@@ -341,9 +435,11 @@
       allLeaderboardData = filteredAttempts;
       updateStats(filteredAttempts);
       displayLeaderboard(filteredAttempts);
+      
+      console.log(`📊 Displaying ${filteredAttempts.length} attempts on leaderboard`);
     }
 
-    // NEW: Show empty state instead of sample data
+    // Show empty state instead of sample data
     function showEmptyState() {
       const tbody = document.getElementById("leaderboardBody");
       tbody.innerHTML = `
@@ -526,12 +622,10 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
 
-        // Get quiz info
         const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
         const quiz = quizzes.find(q => q.quizId === currentQuizId);
         const quizName = currentQuizId === 'all' ? 'All Quizzes' : (quiz ? quiz.subject : 'Selected Quiz');
 
-        // Add title
         doc.setFontSize(20);
         doc.setTextColor(99, 102, 241);
         doc.text("Quiz Portal - Leaderboard", 105, 20, { align: "center" });
@@ -542,7 +636,6 @@
         doc.text(`Period: ${currentPeriod.toUpperCase()}`, 105, 37, { align: "center" });
         doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 44, { align: "center" });
 
-        // Prepare table data
         const tableData = allLeaderboardData.map((entry, index) => [
           index + 1,
           entry.userName || entry.name,
@@ -552,7 +645,6 @@
           entry.date
         ]);
 
-        // Add table
         doc.autoTable({
           startY: 50,
           head: [["Rank", "Name", "Score", "Accuracy", "Time", "Date"]],
@@ -563,7 +655,6 @@
           styles: { fontSize: 10 },
         });
 
-        // Save PDF
         const fileName = `leaderboard-${quizName.replace(/\s+/g, '-')}-${currentPeriod}-${new Date().toISOString().split('T')[0]}.pdf`;
         doc.save(fileName);
 
@@ -584,6 +675,11 @@
       }
     }
   </script>
+
+  
+
+
+
 
 
 
