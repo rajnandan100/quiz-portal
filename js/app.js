@@ -447,3 +447,42 @@ window.addEventListener('pageshow', function(event) {
     updateStats();
   }
 });
+
+
+
+
+// Sync quizzes from Google Sheets on page load
+async function syncQuizzesFromServer() {
+  try {
+    if (window.QuizAPI && typeof window.QuizAPI.sync === 'function') {
+      console.log('🔄 Syncing quizzes from Google Sheets...');
+      const synced = await window.QuizAPI.sync();
+      
+      if (synced) {
+        console.log('✅ Quizzes synced from Google Sheets');
+        loadQuizDashboard(); // Reload with fresh data
+        updateStats();
+      }
+    }
+  } catch (error) {
+    console.log('⚠️ Could not sync from server:', error.message);
+  }
+}
+
+// Call sync on page load
+window.addEventListener('load', function() {
+  setTimeout(syncQuizzesFromServer, 1000);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
