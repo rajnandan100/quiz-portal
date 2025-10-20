@@ -289,6 +289,27 @@
             const text = `🎯 I scored ${results.correct}/${results.total} (${Math.round(results.percentage)}%) on Daily Exam Quiz Portal! #QuizChallenge #GovernmentExam`;
             window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${window.location.origin}`, '_blank');
         }
+
+
+
+// Add this function to the script section
+function viewQuizLeaderboard() {
+    const results = JSON.parse(localStorage.getItem('currentQuizResults') || '{}');
+    const quizId = results.quizId;
+    
+    if (quizId) {
+        window.location.href = `leaderboard.html?quizId=${quizId}`;
+    } else {
+        window.location.href = 'leaderboard.html';
+    }
+}
+
+
+
+
+
+
+        
     </script>
 </body>
 </html>
