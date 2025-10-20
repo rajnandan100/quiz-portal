@@ -273,37 +273,70 @@
       }
     }
 
-    function displayLeaderboard(data) {
-      const tbody = document.getElementById("leaderboardBody");
-      const session = JSON.parse(localStorage.getItem('userSession') || '{}');
-      const currentUser = session.userName || "";
+   function displayLeaderboard(data) {
+  const tbody = document.getElementById("leaderboardBody");
+  const session = JSON.parse(localStorage.getItem('userSession') || '{}');
+  const currentUser = session.userName || "";
 
-      if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><i class="fas fa-inbox fa-3x text-muted mb-3"></i><p>No data available for this period</p></td></tr>';
-        return;
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><i class="fas fa-inbox fa-3x text-muted mb-3"></i><p>No data available for this period</p></td></tr>';
+    return;
+  }
+
+  // REMOVE DUPLICATES: Keep only best attempt per email
+  const uniqueData = [];
+  const emailMap = new Map();
+
+  data.forEach(entry => {
+    const email = entry.email || entry.userName; // Use email as unique key
+    
+    if (!emailMap.has(email)) {
+      emailMap.set(email, entry);
+    } else {
+      // Keep the better score, or faster time if scores are equal
+      const existing = emailMap.get(email);
+      if (entry.score > existing.score || 
+          (entry.score === existing.score && timeToSeconds(entry.time) < timeToSeconds(existing.time))) {
+        emailMap.set(email, entry);
       }
-
-      tbody.innerHTML = data.map((entry, index) => {
-          const isCurrentUser = entry.userName === currentUser;
-          const rowClass = isCurrentUser ? "table-warning" : "";
-          let trophy = "";
-
-          if (index === 0) trophy = "🥇";
-          else if (index === 1) trophy = "🥈";
-          else if (index === 2) trophy = "🥉";
-
-          return `
-            <tr class="${rowClass}">
-              <td class="fw-bold">${trophy} #${index + 1}</td>
-              <td><i class="fas fa-user-circle me-2"></i>${entry.userName || entry.name} ${isCurrentUser ? '<span class="badge bg-primary ms-2">You</span>' : ""}</td>
-              <td><strong>${entry.score}/${entry.total || 30}</strong></td>
-              <td><span class="badge bg-success">${(entry.accuracy || 0).toFixed(2)}%</span></td>
-              <td><i class="fas fa-stopwatch me-1"></i>${entry.time}</td>
-              <td><i class="fas fa-calendar-day me-1"></i>${entry.date}</td>
-            </tr>
-          `;
-        }).join("");
     }
+  });
+
+  // Convert map back to array and sort
+  const deduplicatedData = Array.from(emailMap.values());
+  deduplicatedData.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return timeToSeconds(a.time) - timeToSeconds(b.time);
+  });
+
+  tbody.innerHTML = deduplicatedData.map((entry, index) => {
+      const isCurrentUser = entry.userName === currentUser || entry.email === session.email;
+      const rowClass = isCurrentUser ? "table-warning" : "";
+      let trophy = "";
+
+      if (index === 0) trophy = "🥇";
+      else if (index === 1) trophy = "🥈";
+      else if (index === 2) trophy = "🥉";
+
+      return `
+        <tr class="${rowClass}">
+          <td class="fw-bold">${trophy} #${index + 1}</td>
+          <td><i class="fas fa-user-circle me-2"></i>${entry.userName || entry.name} ${isCurrentUser ? '<span class="badge bg-primary ms-2">You</span>' : ""}</td>
+          <td><strong>${entry.score}/${entry.total || 30}</strong></td>
+          <td><span class="badge bg-success">${(entry.accuracy || 0).toFixed(2)}%</span></td>
+          <td><i class="fas fa-stopwatch me-1"></i>${entry.time}</td>
+          <td><i class="fas fa-calendar-day me-1"></i>${entry.date}</td>
+        </tr>
+      `;
+    }).join("");
+}
+
+function timeToSeconds(time) {
+  if (!time) return 999999;
+  const parts = time.split(':');
+  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+}
+
 
     // Search functionality
     document.getElementById("searchUser").addEventListener("input", function (e) {
