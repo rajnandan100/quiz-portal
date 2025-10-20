@@ -1,74 +1,23 @@
 // Main Application Logic - app.js
 
-function initializeSampleData() {
-  // Only initialize if NO quizzes exist
-  if (!localStorage.getItem('quizzes') || JSON.parse(localStorage.getItem('quizzes')).length === 0) {
-    const sampleQuizzes = [
-      {
-        quizId: 'quiz_sample_1',
-        date: '2025-10-19',
-        subject: 'General Knowledge',
-        totalQuestions: 30,
-        timeLimit: 1800,
-        createdAt: new Date().toISOString(),
-        questions: generateSampleQuestions('General Knowledge', 30),
-      },
-      {
-        quizId: 'quiz_sample_2',
-        date: '2025-10-20',
-        subject: 'English',
-        totalQuestions: 30,
-        timeLimit: 1800,
-        createdAt: new Date().toISOString(),
-        questions: generateSampleQuestions('English', 30),
-      },
-    ];
-    localStorage.setItem('quizzes', JSON.stringify(sampleQuizzes));
-    console.log('📝 Sample quizzes initialized');
-  } else {
-    console.log('✅ Existing quizzes found, skipping sample data');
-  }
-}
-
-function generateSampleQuestions(subject, count) {
-  const questions = [];
-  const sampleTemplates = {
-    'General Knowledge': [
-      { q: 'What is the capital of India?', opts: ['Mumbai', 'New Delhi', 'Kolkata', 'Chennai'], ans: 1, exp: 'New Delhi is the capital of India.' },
-      { q: 'Who is known as the Father of the Nation in India?', opts: ['Jawaharlal Nehru', 'Mahatma Gandhi', 'Sardar Patel', 'Subhas Chandra Bose'], ans: 1, exp: 'Mahatma Gandhi is called the Father of the Nation.' },
-      { q: 'Which is the largest state in India by area?', opts: ['Maharashtra', 'Rajasthan', 'Madhya Pradesh', 'Uttar Pradesh'], ans: 1, exp: 'Rajasthan is the largest state by area.' },
-    ],
-    English: [
-      { q: 'Choose the correct spelling:', opts: ['Accommodate', 'Accomodate', 'Acommodate', 'Acomodate'], ans: 0, exp: 'Accommodate is the correct spelling.' },
-      { q: "What is the synonym of 'happy'?", opts: ['Sad', 'Joyful', 'Angry', 'Tired'], ans: 1, exp: 'Joyful means happy.' },
-      { q: "Choose the antonym of 'difficult':", opts: ['Hard', 'Tough', 'Easy', 'Complex'], ans: 2, exp: 'Easy is the opposite of difficult.' },
-    ],
-  };
-
-  const templates = sampleTemplates[subject] || sampleTemplates['General Knowledge'];
-
-  for (let i = 0; i < count; i++) {
-    const template = templates[i % templates.length];
-    questions.push({
-      question: `${template.q}`,
-      options: template.opts,
-      correctAnswer: template.ans,
-      explanation: template.exp,
-      timeAllocation: 60,
-    });
-  }
-
-  return questions;
-}
+// =========================================
+// REMOVED SAMPLE DATA INITIALIZATION
+// =========================================
+// Sample data function removed - quizzes now only come from admin panel or Google Sheets
 
 window.addEventListener('DOMContentLoaded', function () {
-  initializeSampleData();
+  // Don't initialize sample data anymore
+  // initializeSampleData(); // ← REMOVED THIS LINE
+  
   loadQuizDates();
   setupSubjectSelection();
   setupFormValidation();
   loadQuizDashboard();
   setupFilters();
   updateStats();
+  
+  // Sync from Google Sheets if API is available
+  syncQuizzesFromServer();
 });
 
 function loadQuizDates() {
@@ -223,7 +172,7 @@ function loadQuizDashboard() {
       <div class="col-12 text-center py-5">
         <i class="fas fa-inbox fa-5x text-muted mb-3"></i>
         <h4 class="text-muted">No quizzes available yet</h4>
-        <p class="text-muted">Check back later or contact admin!</p>
+        <p class="text-muted">Admin will create quizzes soon. Check back later!</p>
       </div>`;
     updateQuizCount(0);
     return;
@@ -448,9 +397,6 @@ window.addEventListener('pageshow', function(event) {
   }
 });
 
-
-
-
 // Sync quizzes from Google Sheets on page load
 async function syncQuizzesFromServer() {
   try {
@@ -468,64 +414,3 @@ async function syncQuizzesFromServer() {
     console.log('⚠️ Could not sync from server:', error.message);
   }
 }
-
-// Call sync on page load
-window.addEventListener('load', function() {
-  setTimeout(syncQuizzesFromServer, 1000);
-});
-
-
-
-
-
-// In app.js - add this sync function
-async function syncQuizzesFromServer() {
-  try {
-    if (window.QuizAPI && typeof window.QuizAPI.getQuizzes === 'function') {
-      console.log('🔄 Syncing quizzes from Google Sheets...');
-      const response = await window.QuizAPI.getQuizzes();
-      
-      if (response.status === 'success' && response.data.quizzes) {
-        localStorage.setItem('quizzes', JSON.stringify(response.data.quizzes));
-        console.log(`✅ Synced ${response.data.quizzes.length} quizzes from server`);
-        loadQuizDashboard(); // Reload with fresh data
-        updateStats();
-        return true;
-      }
-    }
-  } catch (error) {
-    console.log('⚠️ Could not sync from server:', error.message);
-  }
-  return false;
-}
-
-// Call on page load
-window.addEventListener('load', function() {
-  setTimeout(syncQuizzesFromServer, 1000);
-});
-
-// Auto-sync quizzes when page loads
-window.addEventListener('load', async function() {
-  console.log('🔄 Checking for quiz updates...');
-  
-  // Wait a bit for API to initialize
-  setTimeout(async () => {
-    if (window.QuizAPI && typeof window.QuizAPI.sync === 'function') {
-      const synced = await window.QuizAPI.sync();
-      
-      if (synced) {
-        console.log('✅ Quizzes synced successfully');
-        // Reload dashboard with fresh data
-        loadQuizDashboard();
-        updateStats();
-      }
-    }
-  }, 1500);
-});
-
-
-
-
-
-
-
