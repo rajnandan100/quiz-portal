@@ -3,36 +3,6 @@
 // 🔴 IMPORTANT: Replace this URL with your actual Google Apps Script Web App URL
 const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz6B8oeyy7hVKvc0b_cjnkOawVmdMEicZipWD7j-Q8rMhUZH8wYvywjAceFbulrT8VM/exec';
 
-
-
-
-
-// =========================================================
-// FETCH ALL QUIZZES FROM GOOGLE SHEETS (NEW)
-// =========================================================
-async function getQuizzesAPI() {
-  try {
-    console.log('📥 Fetching quizzes from Google Sheets...');
-    
-    const response = await fetch(`${GOOGLE_APPS_SCRIPT_URL}?action=getQuizzes`, {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    
-    const result = await response.json();
-    console.log('📊 Quizzes fetch response:', result);
-    
-    if (result.status === 'success') {
-      return result.data.quizzes || [];
-    } else {
-      throw new Error(result.message || 'Failed to fetch quizzes');
-    }
-  } catch (err) {
-    console.error('❌ Get Quizzes API Error:', err);
-    return [];
-  }
-}
-
 // =========================================================
 // CREATE QUIZ
 // =========================================================
@@ -77,7 +47,7 @@ async function createQuizAPI(quizData) {
 // =========================================================
 async function submitQuizAPI(attemptData) {
   try {
-    console.log('📤 Submitting quiz attempt to Google Sheets...');
+    console.log('📤 Submitting quiz attempt to Google Sheets...', attemptData);
 
     const formData = new URLSearchParams({
       action: 'submitQuiz',
@@ -115,6 +85,68 @@ async function submitQuizAPI(attemptData) {
 }
 
 // =========================================================
+// GET ALL QUIZZES
+// =========================================================
+async function getQuizzesAPI() {
+  try {
+    console.log('📥 Fetching quizzes from Google Sheets...');
+    
+    const response = await fetch(`${GOOGLE_APPS_SCRIPT_URL}?action=getQuizzes`, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    
+    const result = await response.json();
+    console.log('📊 Quizzes fetch response:', result);
+    
+    if (result.status === 'success') {
+      return result.data.quizzes || [];
+    } else {
+      throw new Error(result.message || 'Failed to fetch quizzes');
+    }
+  } catch (err) {
+    console.error('❌ Get Quizzes API Error:', err);
+    return [];
+  }
+}
+
+// =========================================================
+// GET LEADERBOARD - THE MISSING FUNCTION
+// =========================================================
+async function getLeaderboardAPI(quizId = 'all') {
+  try {
+    console.log(`📥 Fetching leaderboard from Google Sheets for quiz: ${quizId}`);
+    
+    const url = `${GOOGLE_APPS_SCRIPT_URL}?action=getLeaderboard&quizId=${quizId}`;
+    console.log('📍 Request URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('📊 Leaderboard API Response:', result);
+    
+    if (result.status === 'success') {
+      const leaderboard = result.data.leaderboard || [];
+      console.log(`✅ Fetched ${leaderboard.length} attempts from Google Sheets`);
+      return leaderboard;
+    } else {
+      throw new Error(result.message || 'Failed to fetch leaderboard');
+    }
+  } catch (err) {
+    console.error('❌ Get Leaderboard API Error:', err);
+    console.error('Error details:', err.message);
+    return [];
+  }
+}
+
+// =========================================================
 // CHECK API STATUS
 // =========================================================
 async function checkAPIStatus() {
@@ -146,7 +178,7 @@ async function checkAPIStatus() {
 }
 
 // =========================================================
-// SYNC QUIZZES FROM GOOGLE SHEETS (NEW)
+// SYNC QUIZZES
 // =========================================================
 async function syncQuizzesFromGoogleSheets() {
   try {
@@ -154,25 +186,20 @@ async function syncQuizzesFromGoogleSheets() {
     const serverQuizzes = await getQuizzesAPI();
     
     if (serverQuizzes && serverQuizzes.length > 0) {
-      // Merge with local quizzes
       const localQuizzes = JSON.parse(localStorage.getItem('quizzes') || '[]');
       
-      // Create a map to avoid duplicates
       const quizMap = new Map();
       
-      // Add server quizzes first (they are authoritative)
       serverQuizzes.forEach(quiz => {
         quizMap.set(quiz.quizId, quiz);
       });
       
-      // Add local quizzes that don't exist on server
       localQuizzes.forEach(quiz => {
         if (!quizMap.has(quiz.quizId)) {
           quizMap.set(quiz.quizId, quiz);
         }
       });
       
-      // Save merged quizzes
       const mergedQuizzes = Array.from(quizMap.values());
       localStorage.setItem('quizzes', JSON.stringify(mergedQuizzes));
       
@@ -190,14 +217,59 @@ async function syncQuizzesFromGoogleSheets() {
 }
 
 // =========================================================
-// EXPORT API OBJECT
+// SYNC ATTEMPTS - THE MISSING FUNCTION
+// =========================================================
+async function syncAttemptsFromGoogleSheets() {
+  try {
+    console.log('🔄 Syncing attempts from Google Sheets...');
+    const serverAttempts = await getLeaderboardAPI('all');
+    
+    if (serverAttempts && serverAttempts.length > 0) {
+      const localAttempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
+      
+      const attemptMap = new Map();
+      
+      // Add server attempts first
+      serverAttempts.forEach(attempt => {
+        const key = `${attempt.email}_${attempt.quizId}_${attempt.date}`;
+        attemptMap.set(key, attempt);
+      });
+      
+      // Add local attempts that don't exist on server
+      localAttempts.forEach(attempt => {
+        const key = `${attempt.email}_${attempt.quizId}_${attempt.date}`;
+        if (!attemptMap.has(key)) {
+          attemptMap.set(key, attempt);
+        }
+      });
+      
+      const mergedAttempts = Array.from(attemptMap.values());
+      localStorage.setItem('quizAttempts', JSON.stringify(mergedAttempts));
+      
+      console.log(`✅ Synced ${serverAttempts.length} attempts from server`);
+      console.log(`📊 Total attempts after merge: ${mergedAttempts.length}`);
+      return true;
+    }
+    
+    console.log('⚠️ No attempts found on server');
+    return false;
+  } catch (e) {
+    console.warn('⚠️ Could not sync attempts:', e.message);
+    return false;
+  }
+}
+
+// =========================================================
+// EXPORT API OBJECT - FIXED WITH ALL FUNCTIONS
 // =========================================================
 window.QuizAPI = {
   createQuiz: createQuizAPI,
   submitQuiz: submitQuizAPI,
   getQuizzes: getQuizzesAPI,
+  getLeaderboard: getLeaderboardAPI,        // ← WAS MISSING
   checkStatus: checkAPIStatus,
-  sync: syncQuizzesFromGoogleSheets
+  sync: syncQuizzesFromGoogleSheets,
+  syncAttempts: syncAttemptsFromGoogleSheets  // ← WAS MISSING
 };
 
 // Auto-check connection on page load
@@ -210,11 +282,11 @@ window.addEventListener('DOMContentLoaded', function() {
     checkAPIStatus().then(isConnected => {
       if (isConnected) {
         console.log('✅ Google Sheets API is READY');
-        // Auto-sync quizzes
-        syncQuizzesFromGoogleSheets();
       } else {
         console.warn('⚠️ Google Sheets API is not responding');
       }
     });
   }
 });
+
+console.log('✅ api.js loaded - Version 2.0 with getLeaderboard');
