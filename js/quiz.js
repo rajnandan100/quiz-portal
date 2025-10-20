@@ -1,4 +1,4 @@
-// Quiz Logic - quiz.js
+// Updated quiz.js - Complete file with Google Sheets integration
 
 let currentQuestion = 0;
 let quizData = null;
@@ -34,7 +34,6 @@ function loadQuiz() {
   document.getElementById("subjectName").textContent = quizData.subject;
   document.getElementById("totalQuestions").textContent = quizData.totalQuestions;
 
-  // Initialize state from saved quizState if any
   const savedState = JSON.parse(localStorage.getItem(`quizState_${quizData.quizId}`) || "{}");
   if (savedState && savedState.quizId === quizData.quizId) {
     currentQuestion = savedState.currentQuestion || 0;
@@ -61,9 +60,6 @@ function startTimer() {
     timeRemaining--;
     updateTimerDisplay();
 
-    if (timeRemaining === 300) {
-      // 5 minutes warning (optional)
-    }
     if (timeRemaining === 120) {
       showTimeWarning();
     }
@@ -81,10 +77,10 @@ function updateTimerDisplay() {
   timerEl.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
   if (timeRemaining <= 120) {
-    timerEl.classList.remove("bg-success");
+    timerEl.classList.remove("bg-success", "bg-warning");
     timerEl.classList.add("bg-danger");
   } else if (timeRemaining <= 300) {
-    timerEl.classList.remove("bg-success");
+    timerEl.classList.remove("bg-success", "bg-danger");
     timerEl.classList.add("bg-warning");
   } else {
     timerEl.classList.remove("bg-warning", "bg-danger");
@@ -141,6 +137,8 @@ function loadQuestion(index) {
     const label = document.createElement("label");
     label.htmlFor = `option${idx}`;
     label.textContent = `${String.fromCharCode(65 + idx)}. ${option}`;
+    label.style.cursor = "pointer";
+    label.style.flex = "1";
 
     optionDiv.appendChild(radioInput);
     optionDiv.appendChild(label);
@@ -148,7 +146,6 @@ function loadQuestion(index) {
     optionsContainer.appendChild(optionDiv);
   });
 
-  // Update mark for review button
   const markBtn = document.getElementById("markForReviewBtn");
   if (markedForReview.has(index)) {
     markBtn.classList.add("active");
@@ -161,7 +158,6 @@ function loadQuestion(index) {
   updateQuestionPalette();
   updateProgress();
 
-  // Disable/enable prev & next buttons
   document.getElementById("prevBtn").disabled = index === 0;
   document.getElementById("nextBtn").disabled = index === quizData.totalQuestions - 1;
 }
@@ -243,7 +239,7 @@ function showSubmitConfirm() {
   new bootstrap.Modal(document.getElementById("confirmSubmitModal")).show();
 }
 
-function submitQuiz() {
+async function submitQuiz() {
   clearInterval(timer);
   clearInterval(autoSaveInterval);
 
@@ -254,8 +250,8 @@ function submitQuiz() {
     return acc;
   }, 0);
 
-  const incorrect = quizData.totalQuestions - Object.keys(userAnswers).length + (Object.keys(userAnswers).length - correct);
   const unattempted = quizData.totalQuestions - Object.keys(userAnswers).length;
+  const incorrect = Object.keys(userAnswers).length - correct;
 
   const results = {
     quizId: quizData.quizId,
@@ -272,10 +268,12 @@ function submitQuiz() {
 
   localStorage.setItem('currentQuizResults', JSON.stringify(results));
 
-  // Add user attempt (for leaderboard and retry purposes)
-  const attempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
+  // Get user session
   const session = JSON.parse(localStorage.getItem('userSession') || '{}');
-  attempts.push({
+
+  // Add user attempt to localStorage
+  const attempts = JSON.parse(localStorage.getItem('quizAttempts') || '[]');
+  const attemptData = {
     attemptId: `attempt_${Date.now()}`,
     quizId: results.quizId,
     userName: session.userName,
@@ -286,13 +284,46 @@ function submitQuiz() {
     time: results.timeTaken,
     date: results.date,
     timestamp: new Date().toISOString(),
-  });
+  };
+  attempts.push(attemptData);
   localStorage.setItem('quizAttempts', JSON.stringify(attempts));
+
+  // Send to Google Sheets API
+  try {
+    if (window.QuizAPI && typeof window.QuizAPI.submitQuiz === 'function') {
+      await window.QuizAPI.submitQuiz({
+        quizId: results.quizId,
+        userName: session.userName,
+        email: session.email,
+        answersJson: JSON.stringify(userAnswers),
+        score: results.score,
+        percentage: results.percentage,
+        timeTaken: results.timeTaken,
+        attemptDate: results.date
+      });
+      console.log('✅ Quiz attempt sent to Google Sheets successfully');
+    } else {
+      console.warn('⚠️ QuizAPI not available, data saved locally only');
+    }
+  } catch (error) {
+    console.error('❌ Error sending to Google Sheets:', error);
+    // Continue anyway - data is saved locally
+  }
 
   // Clear quiz saved state
   localStorage.removeItem(`quizState_${quizData.quizId}`);
-  // Navigate to results page
-  window.location.href = 'results.html';
+  
+  // Show success message
+  Swal.fire({
+    title: 'Quiz Submitted!',
+    text: 'Your results are being processed...',
+    icon: 'success',
+    timer: 2000,
+    showConfirmButton: false
+  }).then(() => {
+    // Navigate to results page
+    window.location.href = 'results.html';
+  });
 }
 
 function autoSubmitQuiz() {
@@ -313,7 +344,6 @@ function formatTime(seconds) {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-// Warn user when trying to leave page during quiz
 window.addEventListener('beforeunload', (e) => {
   if (timer) {
     e.preventDefault();
