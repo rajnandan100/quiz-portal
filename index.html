@@ -496,6 +496,30 @@ if (document.getElementById('particles-js')) {
 </script>
 
 
+<script>
+// Debug: Check API Status
+window.addEventListener('DOMContentLoaded', async function() {
+    console.log('🔍 Checking Google Sheets API Connection...');
+    
+    if (window.QuizAPI) {
+        console.log('✅ QuizAPI object found');
+        
+        try {
+            const status = await window.QuizAPI.checkStatus();
+            if (status) {
+                console.log('✅ Google Sheets API is CONNECTED and working');
+            } else {
+                console.warn('⚠️ Google Sheets API connection failed');
+            }
+        } catch (error) {
+            console.error('❌ API Status Check Error:', error);
+            console.log('📝 Data will be saved locally only');
+        }
+    } else {
+        console.error('❌ QuizAPI not loaded. Check if api.js is included');
+    }
+});
+</script>
 
     
 </body>
