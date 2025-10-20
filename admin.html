@@ -179,84 +179,227 @@
 
         <!-- Tab Content -->
         <div class="tab-content" id="adminTabContent">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             
             <!-- CREATE QUIZ TAB -->
-            <div class="tab-pane fade show active" id="createQuiz" role="tabpanel">
-                <div class="row">
-                    <div class="col-lg-8">
-                        <div class="card shadow-sm border-0 mb-4">
-                            <div class="card-header bg-danger text-white py-3">
-                                <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Create New Quiz</h4>
+         <!-- CREATE QUIZ TAB -->
+<div class="tab-pane fade show active" id="createQuiz" role="tabpanel">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-danger text-white py-3">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Create New Quiz</h4>
+                    <small class="opacity-75">Fill the form below to create a new quiz in under 60 seconds</small>
+                </div>
+                <div class="card-body p-4">
+                    <form id="quizCreationForm">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-calendar-alt text-danger me-2"></i>Quiz Date *
+                                </label>
+                                <input type="date" class="form-control" id="quizDateInput" required>
+                                <small class="text-muted">Default: Today's date</small>
                             </div>
-                            <div class="card-body p-4">
-                                <form id="quizCreationForm">
-                                    <div class="row g-3 mb-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold">
-                                                <i class="fas fa-calendar-alt text-danger me-2"></i>Quiz Date *
-                                            </label>
-                                            <input type="date" class="form-control" id="quizDateInput" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold">
-                                                <i class="fas fa-book text-danger me-2"></i>Subject *
-                                            </label>
-                                            <select class="form-select" id="subjectInput" required>
-                                                <option value="">Select subject...</option>
-                                                <option value="General Knowledge">General Knowledge</option>
-                                                <option value="English">English</option>
-                                                <option value="Reasoning">Reasoning</option>
-                                                <option value="Mathematics">Mathematics</option>
-                                                <option value="General Studies">General Studies</option>
-                                                <option value="Current Affairs">Current Affairs</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">
-                                            <i class="fas fa-code text-danger me-2"></i>Questions JSON *
-                                        </label>
-                                        <textarea class="form-control font-monospace" id="questionsJson" rows="12" required></textarea>
-                                    </div>
-
-                                    <div class="card bg-light border-0 mb-3">
-                                        <div class="card-body">
-                                            <div class="row text-center">
-                                                <div class="col-md-4">
-                                                    <i class="fas fa-list-ol fa-2x text-primary mb-2"></i>
-                                                    <h4 id="questionCount" class="text-primary mb-0">0</h4>
-                                                    <small>Questions</small>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <i class="fas fa-clock fa-2x text-success mb-2"></i>
-                                                    <h4 id="totalTime" class="text-success mb-0">0 min</h4>
-                                                    <small>Duration</small>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <button type="button" class="btn btn-outline-primary" onclick="validateJSON()">
-                                                        <i class="fas fa-check me-1"></i>Validate
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <button type="submit" class="btn btn-danger btn-lg px-4">
-                                            <i class="fas fa-cloud-upload-alt me-2"></i>Create Quiz
-                                        </button>
-                                        <button type="reset" class="btn btn-outline-secondary btn-lg px-4">
-                                            <i class="fas fa-redo me-2"></i>Reset
-                                        </button>
-                                        <button type="button" class="btn btn-outline-info btn-lg px-4" onclick="copyTemplate()">
-                                            <i class="fas fa-copy me-2"></i>Copy Template
-                                        </button>
-                                    </div>
-                                </form>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-book text-danger me-2"></i>Subject *
+                                </label>
+                                <select class="form-select" id="subjectInput" required>
+                                    <option value="">Select subject...</option>
+                                    <option value="General Knowledge">General Knowledge</option>
+                                    <option value="English">English</option>
+                                    <option value="Reasoning">Reasoning</option>
+                                    <option value="Mathematics">Mathematics</option>
+                                    <option value="General Studies">General Studies</option>
+                                    <option value="Current Affairs">Current Affairs</option>
+                                    <option value="Computer Awareness">Computer Awareness</option>
+                                    <option value="Banking Awareness">Banking Awareness</option>
+                                </select>
                             </div>
                         </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-code text-danger me-2"></i>Questions JSON *
+                            </label>
+                            <textarea class="form-control font-monospace" 
+                                      id="questionsJson" 
+                                      rows="14" 
+                                      required 
+                                      placeholder='Paste your questions in JSON format here. Example:
+
+[
+  {
+    "question": "What is the capital of India?",
+    "options": ["Mumbai", "New Delhi", "Kolkata", "Chennai"],
+    "correctAnswer": 1,
+    "explanation": "New Delhi is the capital of India since 1911. It became the capital after shifting from Kolkata.",
+    "timeAllocation": 60
+  },
+  {
+    "question": "Who wrote the Indian National Anthem?",
+    "options": ["Rabindranath Tagore", "Bankim Chandra", "Sarojini Naidu", "Subhas Chandra Bose"],
+    "correctAnswer": 0,
+    "explanation": "Rabindranath Tagore wrote Jana Gana Mana, which was adopted as the National Anthem in 1950.",
+    "timeAllocation": 60
+  },
+  {
+    "question": "Which planet is known as the Red Planet?",
+    "options": ["Venus", "Mars", "Jupiter", "Saturn"],
+    "correctAnswer": 1,
+    "explanation": "Mars is called the Red Planet due to iron oxide (rust) on its surface.",
+    "timeAllocation": 60
+  }
+]
+
+📝 Format Rules:
+• question: Your question text (required)
+• options: Array of exactly 4 choices (required)
+• correctAnswer: Index of correct option - 0, 1, 2, or 3 (required)
+• explanation: Detailed explanation (required)
+• timeAllocation: Time in seconds, default 60 (required)'></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <strong>Format:</strong> Array of question objects. Each question needs: 
+                                <code>question</code>, <code>options</code> (4 items), 
+                                <code>correctAnswer</code> (0-3), <code>explanation</code>, 
+                                <code>timeAllocation</code> (seconds)
+                            </div>
+                        </div>
+
+                        <div class="card bg-light border-0 mb-3">
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <i class="fas fa-list-ol fa-2x text-primary mb-2"></i>
+                                        <h4 id="questionCount" class="text-primary mb-0">0</h4>
+                                        <small>Total Questions</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <i class="fas fa-clock fa-2x text-success mb-2"></i>
+                                        <h4 id="totalTime" class="text-success mb-0">0 min</h4>
+                                        <small>Total Duration</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" class="btn btn-outline-primary" onclick="validateJSON()">
+                                            <i class="fas fa-check me-1"></i>Validate JSON
+                                        </button>
+                                        <small class="d-block mt-1 text-muted">Check format</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-danger btn-lg px-4">
+                                <i class="fas fa-cloud-upload-alt me-2"></i>Create Quiz
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary btn-lg px-4">
+                                <i class="fas fa-redo me-2"></i>Reset Form
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-lg px-4" onclick="copyTemplate()">
+                                <i class="fas fa-copy me-2"></i>Copy Template
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-lg px-4" onclick="pasteFromClipboard()">
+                                <i class="fas fa-paste me-2"></i>Paste from Clipboard
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Quick Guide Card -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Quick Guide</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0 small">
+                        <li class="mb-2">Date is auto-filled with today</li>
+                        <li class="mb-2">Select quiz subject</li>
+                        <li class="mb-2">Paste questions in JSON format</li>
+                        <li class="mb-2">Click "Validate" to check format</li>
+                        <li class="mb-2">Review question count & duration</li>
+                        <li>Click "Create Quiz" to save</li>
+                    </ol>
+                    <hr>
+                    <div class="alert alert-warning mb-0 small">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        <strong>Note:</strong> correctAnswer uses index (0-3)<br>
+                        0 = First option<br>
+                        1 = Second option<br>
+                        2 = Third option<br>
+                        3 = Fourth option
                     </div>
+                </div>
+            </div>
+
+            <!-- JSON Template Card -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-code me-2"></i>Quick Copy Template</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 rounded small" style="font-size:10px; max-height: 300px; overflow-y: auto;">[
+  {
+    "question": "Sample question?",
+    "options": [
+      "Option A",
+      "Option B", 
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": 1,
+    "explanation": "Why option B is correct",
+    "timeAllocation": 60
+  },
+  {
+    "question": "Another question?",
+    "options": [
+      "Choice 1",
+      "Choice 2",
+      "Choice 3",
+      "Choice 4"
+    ],
+    "correctAnswer": 0,
+    "explanation": "Detailed explanation here",
+    "timeAllocation": 60
+  }
+]</pre>
+                    <button class="btn btn-warning w-100 btn-sm mb-2" onclick="copyTemplate()">
+                        <i class="fas fa-copy me-1"></i>Copy Template
+                    </button>
+                    <button class="btn btn-outline-warning w-100 btn-sm" onclick="fillSampleData()">
+                        <i class="fas fa-flask me-1"></i>Load Sample Quiz
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+  <!--   
+
+                    
 
                     <div class="col-lg-4">
                         <!-- Quick Guide Card -->
@@ -298,7 +441,25 @@
                 </div>
             </div>
 
-            <!-- MANAGE QUIZZES TAB -->
+        -->
+
+
+        
+
+        <!--     MANAGE QUIZZES TAB -->
+
+
+
+
+
+
+
+
+
+
+
+
+        
             <div class="tab-pane fade" id="manageQuizzes" role="tabpanel">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
