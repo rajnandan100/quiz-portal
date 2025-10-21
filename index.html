@@ -758,6 +758,62 @@ window.addEventListener('DOMContentLoaded', async function() {
 
 
 
+<script>
+(function() {
+    'use strict';
+    
+    // Disable right-click
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    
+    // Disable key combinations
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
+            (e.ctrlKey && ['u', 's', 'a', 'p'].includes(e.key.toLowerCase()))) {
+            e.preventDefault();
+        }
+    });
+    
+    // Mobile protection
+    let pressTimer;
+    document.addEventListener('touchstart', function(e) {
+        pressTimer = setTimeout(() => e.preventDefault(), 500);
+    });
+    document.addEventListener('touchend', () => clearTimeout(pressTimer));
+    document.addEventListener('touchmove', () => clearTimeout(pressTimer));
+    
+    // Disable console access
+    const devtools = {
+        open: false,
+        orientation: null
+    };
+    
+    setInterval(() => {
+        if (window.outerHeight - window.innerHeight > 200 || window.outerWidth - window.innerWidth > 200) {
+            document.body.innerHTML = '<h1>Developer tools detected!</h1>';
+        }
+    }, 500);
+    
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
 
 
 
